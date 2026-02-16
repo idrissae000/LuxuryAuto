@@ -3,13 +3,9 @@ import { TRAVEL_BUFFER_MINUTES } from "@/lib/constants";
 import { getBusyWindowsFromGoogle } from "@/lib/google-calendar";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-export type BusyWindow = { start: string; end: string };
+type BusyWindow = { start: string; end: string };
 
-export const getBusyWindowsFromDatabase = async (
-  ownerId: string,
-  timeMin: string,
-  timeMax: string
-): Promise<BusyWindow[]> => {
+export const getBusyWindowsFromDatabase = async (ownerId: string, timeMin: string, timeMax: string): Promise<BusyWindow[]> => {
   const from = subMinutes(new Date(timeMin), TRAVEL_BUFFER_MINUTES).toISOString();
   const to = addMinutes(new Date(timeMax), TRAVEL_BUFFER_MINUTES).toISOString();
 
@@ -29,11 +25,7 @@ export const getBusyWindowsFromDatabase = async (
   }));
 };
 
-export const getBusyWindowsCombined = async (
-  ownerId: string,
-  timeMin: string,
-  timeMax: string
-): Promise<BusyWindow[]> => {
+export const getBusyWindowsCombined = async (ownerId: string, timeMin: string, timeMax: string) => {
   const [dbBusy, googleBusy] = await Promise.all([
     getBusyWindowsFromDatabase(ownerId, timeMin, timeMax),
     getBusyWindowsFromGoogle(timeMin, timeMax).catch(() => [])

@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import { BUSINESS_TIMEZONE } from "@/lib/constants";
-import { BusyWindow } from "@/lib/booking-conflicts";
 
 export const formatCurrency = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -10,7 +9,7 @@ export const toLocalLabel = (date: Date) =>
 
 export const intersects = (
   slot: { start: Date; busyCheckEnd: Date },
-  busy: BusyWindow[]
+  busy: { start: string; end: string }[]
 ) => {
   return busy.some((event) => {
     const busyStart = new Date(event.start);
