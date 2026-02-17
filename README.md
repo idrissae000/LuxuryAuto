@@ -90,6 +90,52 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
    - Booking submission creates Supabase row + Google event
    - Admin dashboard sees booking data
 
+
+## If Vercel Fails With Type Errors (Step-by-Step)
+1. Pull the latest code that includes the busy-window typing fix.
+2. In Vercel, open **Project → Settings → Environment Variables**.
+3. Add/update required vars:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `DEFAULT_OWNER_ID`
+4. (Optional for first test) Leave Google vars empty; app will still run using DB overlap checks.
+5. Ensure Supabase migration was run and catalog seeded:
+   ```sql
+   select public.seed_default_catalog('<ADMIN_USER_UUID>'::uuid);
+   ```
+6. In Vercel, click **Deployments → Redeploy** (or push a new commit).
+7. After deploy, test:
+   - `/book` loads services and slots
+   - booking submit creates a DB row
+   - `/admin/dashboard` shows the booking
+8. When ready to enable Google sync, add:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `GOOGLE_PRIVATE_KEY`
+   - `GOOGLE_CALENDAR_ID`
+   then redeploy and verify event creation.
+
+
+
+## If You Hit Merge Conflicts On GitHub PR
+If the conflict header shows `<<<<<<< codex/... (Current change)`, use **Accept current change** for these files to keep the build fix:
+- `src/app/api/availability/route.ts`
+- `src/lib/booking-conflicts.ts`
+- `src/lib/google-calendar.ts`
+- `src/lib/utils.ts`
+- `README.md`
+Then click **Mark as resolved** for each file and finish with **Commit merge**.
+
+## Vercel Build & Output Settings
+Use these exact settings:
+- **Framework Preset:** Next.js
+- **Build Command:** `npm run build`
+- **Install Command:** `npm install` (or `npm ci` if you commit lockfile)
+- **Output Directory:** leave empty / default (do **not** set `out`)
+- **Node.js Version:** 20.x
+
+If you changed Output Directory to `out`, remove it. This app uses server routes (`/api/*`) and SSR admin pages, so static export output is not compatible.
+
 ## Common Deployment Mistakes to Avoid
 - Using a placeholder/incorrect `DEFAULT_OWNER_ID` (breaks catalog lookup and booking inserts).
 - Forgetting to run `seed_default_catalog` for the real owner.

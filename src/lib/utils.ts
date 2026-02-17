@@ -1,5 +1,8 @@
 import { format } from "date-fns";
 import { BUSINESS_TIMEZONE } from "@/lib/constants";
+import { BusyWindow } from "@/lib/booking-conflicts";
+
+type BusyLike = BusyWindow | { start?: string | null; end?: string | null };
 
 export const formatCurrency = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
@@ -9,11 +12,15 @@ export const toLocalLabel = (date: Date) =>
 
 export const intersects = (
   slot: { start: Date; busyCheckEnd: Date },
-  busy: { start: string; end: string }[]
+  busy: BusyLike[]
 ) => {
   return busy.some((event) => {
-    const busyStart = new Date(event.start);
-    const busyEnd = new Date(event.end);
+    const start = typeof event.start === "string" ? event.start : null;
+    const end = typeof event.end === "string" ? event.end : null;
+    if (!start || !end) return false;
+
+    const busyStart = new Date(start);
+    const busyEnd = new Date(end);
     return slot.start < busyEnd && slot.busyCheckEnd > busyStart;
   });
 };
