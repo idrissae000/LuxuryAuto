@@ -95,25 +95,34 @@ export function BookingForm() {
     setAddonIds((prev) => (prev.includes(id) ? prev.filter((addonId) => addonId !== id) : [...prev, id]));
   };
 
+  const next = () => setStep((prev) => Math.min(5, prev + 1));
+  const back = () => setStep((prev) => Math.max(1, prev - 1));
+
   return (
-    <div className="card space-y-6">
+    <div className="card space-y-6 bg-gradient-to-b from-white/5 to-transparent">
       <div className="flex items-center justify-between text-sm text-white/70">
         <span>Step {step} of 5</span>
-        <span className="text-xs text-brand-blue">Catalog: {catalogSource === "database" ? "Live DB" : "Fallback"}</span>
+        <span className="rounded-full border border-brand-blue/40 px-3 py-1 text-xs text-brand-blue">
+          {catalogSource === "database" ? "Live DB" : "Fallback"}
+        </span>
       </div>
+
       {step === 1 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Choose service</h2>
+          <h2 className="text-2xl font-semibold">Choose your detail package</h2>
+          <p className="text-sm text-white/60">Tip: double-click a package on desktop to instantly continue.</p>
           {services.map((item) => (
             <button
               key={item.id}
               onClick={() => setServiceId(item.id)}
-              className={`w-full rounded-xl border p-4 text-left ${serviceId === item.id ? "border-brand-blue bg-brand-blue/10" : "border-white/10"}`}
+              onDoubleClick={() => {
+                setServiceId(item.id);
+                setStep(2);
+              }}
+              className={`w-full rounded-xl border p-4 text-left transition ${serviceId === item.id ? "border-brand-blue bg-brand-blue/15 shadow-glow" : "border-white/10 hover:border-white/30"}`}
             >
               <p className="font-semibold">{item.name}</p>
-              <p className="text-sm text-white/70">
-                {item.duration_minutes} min • {formatCurrency(item.base_price_cents)}
-              </p>
+              <p className="text-sm text-white/70">{item.duration_minutes} min • {formatCurrency(item.base_price_cents)}</p>
             </button>
           ))}
         </div>
@@ -127,7 +136,7 @@ export function BookingForm() {
               <button
                 key={size}
                 onClick={() => setVehicleSize(size)}
-                className={`rounded-xl border p-4 ${vehicleSize === size ? "border-brand-blue bg-brand-blue/10" : "border-white/10"}`}
+                className={`rounded-xl border p-4 transition ${vehicleSize === size ? "border-brand-blue bg-brand-blue/15" : "border-white/10 hover:border-white/30"}`}
               >
                 {size}
               </button>
@@ -138,7 +147,7 @@ export function BookingForm() {
 
       {step === 3 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Add-ons</h2>
+          <h2 className="text-2xl font-semibold">Optional add-on</h2>
           {addonsCatalog.map((addon) => (
             <label key={addon.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4">
               <span>{addon.name}</span>
@@ -161,7 +170,7 @@ export function BookingForm() {
               onChange={(e) => setDate(e.target.value)}
               className="rounded-lg border border-white/20 bg-black px-3 py-2"
             />
-            <button onClick={fetchAvailability} className="rounded-lg bg-brand-blue px-4 py-2 font-semibold">
+            <button onClick={fetchAvailability} className="rounded-lg bg-brand-blue px-4 py-2 font-semibold shadow-glow">
               {loadingSlots ? "Loading..." : "Check availability"}
             </button>
           </div>
@@ -170,7 +179,7 @@ export function BookingForm() {
               <button
                 key={slot.start}
                 onClick={() => setStartTime(slot.start)}
-                className={`rounded-lg border px-3 py-2 ${startTime === slot.start ? "border-brand-blue bg-brand-blue/10" : "border-white/10"}`}
+                className={`rounded-lg border px-3 py-2 ${startTime === slot.start ? "border-brand-blue bg-brand-blue/15" : "border-white/10"}`}
               >
                 {slot.label}
               </button>
@@ -208,7 +217,7 @@ export function BookingForm() {
           <button
             onClick={submitBooking}
             disabled={submitting}
-            className="w-full rounded-lg bg-brand-blue px-4 py-3 font-semibold disabled:opacity-50"
+            className="w-full rounded-lg bg-brand-blue px-4 py-3 font-semibold shadow-glow disabled:opacity-50"
           >
             {submitting ? "Submitting..." : "Confirm booking"}
           </button>
@@ -217,13 +226,18 @@ export function BookingForm() {
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <div className="flex justify-between">
-        <button onClick={() => setStep((prev) => Math.max(1, prev - 1))} disabled={step === 1} className="text-sm text-white/70">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button onClick={back} disabled={step === 1} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/70 disabled:opacity-40">
           Back
         </button>
-        <button onClick={() => setStep((prev) => Math.min(5, prev + 1))} disabled={step === 5} className="text-sm text-brand-blue">
-          Next
-        </button>
+        {step < 5 && (
+          <button
+            onClick={next}
+            className="rounded-xl bg-brand-blue px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-glow transition hover:brightness-110"
+          >
+            Next Step
+          </button>
+        )}
       </div>
     </div>
   );

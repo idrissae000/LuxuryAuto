@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { BUSINESS_TIMEZONE } from "@/lib/constants";
 
+type BusyWindow = { start: string; end: string };
+
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
 export const isGoogleCalendarConfigured = () =>
@@ -20,7 +22,7 @@ const getCalendarClient = () => {
   return google.calendar({ version: "v3", auth });
 };
 
-export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string) => {
+export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string): Promise<BusyWindow[]> => {
   const calendar = getCalendarClient();
   if (!calendar || !calendarId) return [];
 
@@ -33,7 +35,11 @@ export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string)
     }
   });
 
-  return response.data.calendars?.[calendarId]?.busy ?? [];
+  const rawBusy = response.data.calendars?.[calendarId]?.busy ?? [];
+
+  return rawBusy.filter((event): event is { start: string; end: string } => {
+    return typeof event.start === "string" && typeof event.end === "string";
+  });
 };
 
 export const createCalendarEvent = async (payload: {

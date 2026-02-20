@@ -76,16 +76,12 @@ begin
   values
     ('11111111-1111-1111-1111-111111111111', p_owner_id, 'Interior Detail', 'Deep clean of seats, carpets, dashboard, and interior surfaces.', 16000, 120),
     ('22222222-2222-2222-2222-222222222222', p_owner_id, 'Exterior Detail', 'Foam wash, decontamination, hand dry, and premium wax seal.', 14000, 90),
-    ('33333333-3333-3333-3333-333333333333', p_owner_id, 'Full Detail', 'Complete interior + exterior transformation.', 26000, 210),
-    ('44444444-4444-4444-4444-444444444444', p_owner_id, 'Ceramic Coating Prep', 'Single-stage correction and coating prep consultation package.', 32000, 240)
+    ('33333333-3333-3333-3333-333333333333', p_owner_id, 'Full Vehicle Detail', 'Complete interior + exterior transformation.', 28500, 210)
   on conflict (id) do nothing;
 
   insert into public.addons (id, owner_id, name, price_cents, extra_minutes)
   values
-    ('aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaa1', p_owner_id, 'Pet Hair Removal', 3500, 30),
-    ('aaaaaaa2-aaaa-aaaa-aaaa-aaaaaaaaaaa2', p_owner_id, 'Stain Extraction', 4000, 30),
-    ('aaaaaaa3-aaaa-aaaa-aaaa-aaaaaaaaaaa3', p_owner_id, 'Engine Bay Detail', 3000, 20),
-    ('aaaaaaa4-aaaa-aaaa-aaaa-aaaaaaaaaaa4', p_owner_id, 'Odor Treatment', 2500, 20)
+    ('aaaaaaa4-aaaa-aaaa-aaaa-aaaaaaaaaaa4', p_owner_id, 'Odor Removal', 1500, 15)
   on conflict (id) do nothing;
 end;
 $$;

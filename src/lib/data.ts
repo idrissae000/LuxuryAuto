@@ -4,42 +4,45 @@ export const defaultServices: Service[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
     name: "Interior Detail",
-    description: "Deep clean of seats, carpets, dashboard, and interior surfaces.",
-    base_price_cents: 16000,
+    description: "Deep interior refresh: seats, carpets, dash, door panels, vents, and trim.",
+    base_price_cents: 17500,
     duration_minutes: 120
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Exterior Detail",
-    description: "Foam wash, decontamination, hand dry, and premium wax seal.",
-    base_price_cents: 14000,
+    description: "Foam wash, hand decon, wheel/tire treatment, and premium exterior finish.",
+    base_price_cents: 15500,
     duration_minutes: 90
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
-    name: "Full Detail",
-    description: "Complete interior + exterior transformation with paint-safe products.",
-    base_price_cents: 26000,
+    name: "Full Vehicle Detail",
+    description: "Complete interior + exterior service for a full vehicle reset.",
+    base_price_cents: 28500,
     duration_minutes: 210
-  },
-  {
-    id: "44444444-4444-4444-4444-444444444444",
-    name: "Ceramic Coating Prep",
-    description: "Single-stage correction and coating prep consultation package.",
-    base_price_cents: 32000,
-    duration_minutes: 240
   }
 ];
 
 export const defaultAddons: Addon[] = [
-  { id: "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaa1", name: "Pet Hair Removal", price_cents: 3500, extra_minutes: 30 },
-  { id: "aaaaaaa2-aaaa-aaaa-aaaa-aaaaaaaaaaa2", name: "Stain Extraction", price_cents: 4000, extra_minutes: 30 },
-  { id: "aaaaaaa3-aaaa-aaaa-aaaa-aaaaaaaaaaa3", name: "Engine Bay Detail", price_cents: 3000, extra_minutes: 20 },
-  { id: "aaaaaaa4-aaaa-aaaa-aaaa-aaaaaaaaaaa4", name: "Odor Treatment", price_cents: 2500, extra_minutes: 20 }
+  { id: "aaaaaaa4-aaaa-aaaa-aaaa-aaaaaaaaaaa4", name: "Odor Removal", price_cents: 1500, extra_minutes: 15 }
 ];
 
-export const testimonials = [
-  { name: "Monica R.", quote: "My SUV looked better than the day I bought it. Flawless service." },
-  { name: "Caleb T.", quote: "On-time, professional, and truly luxury-level detailing." },
-  { name: "Jasmine P.", quote: "Booking was easy and the team communicated every step." }
+export const faqs = [
+  {
+    q: "How long does a detail take?",
+    a: "Interior and exterior packages usually range from 90–210 minutes depending on vehicle condition and size."
+  },
+  {
+    q: "Do you service all of Texas?",
+    a: "No. Service area is Houston metro with focus on Cypress and nearby neighborhoods."
+  },
+  {
+    q: "What do I need to provide?",
+    a: "Just access to the vehicle and enough space to work safely."
+  },
+  {
+    q: "How do cancellations work?",
+    a: "Please provide at least 24 hours notice when possible so we can reschedule your slot."
+  }
 ];
