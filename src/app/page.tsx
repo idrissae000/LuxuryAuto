@@ -27,7 +27,10 @@ export default function HomePage() {
             </div>
           </div>
           <div className="card bg-gradient-to-br from-brand-slate to-black">
-            <Image src="/logo.svg" alt="Luxury Auto Detailz logo" width={480} height={480} className="mx-auto rounded-3xl" />
+            <picture>
+              <source srcSet="/logo.png" type="image/png" />
+              <img src="/logo.svg" alt="Luxury Auto Detailz logo" width={480} height={480} className="mx-auto rounded-3xl" />
+            </picture>
           </div>
         </div>
       </section>
