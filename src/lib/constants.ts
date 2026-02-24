@@ -14,3 +14,12 @@ export const WORKING_HOURS: Record<number, { start: string; end: string } | null
 };
 
 export const VEHICLE_SIZES = ["Sedan", "SUV", "Truck"] as const;
+
+const SERVICE_DURATION_OVERRIDES: Record<string, number> = {
+  "Interior Detail": 60,
+  "Exterior Detail": 60,
+  "Full Vehicle Detail": 120
+};
+
+export const getServiceDurationMinutes = (serviceName: string, fallbackDuration: number) =>
+  SERVICE_DURATION_OVERRIDES[serviceName] ?? fallbackDuration;

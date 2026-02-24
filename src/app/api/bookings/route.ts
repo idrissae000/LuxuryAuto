@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createCalendarEvent } from "@/lib/google-calendar";
 import { formatCurrency } from "@/lib/utils";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { TRAVEL_BUFFER_MINUTES } from "@/lib/constants";
+import { TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
 import { sendBookingEmails } from "@/lib/email";
 import { generateCandidateSlots } from "@/lib/scheduling";
 import { getBusyWindowsCombined } from "@/lib/booking-conflicts";
@@ -15,8 +15,8 @@ const schema = z.object({
   addonIds: z.array(z.string().uuid()),
   startTime: z.string().datetime(),
   name: z.string().min(2),
-  phone: z.string().min(7),
-  email: z.string().email(),
+  phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
+  email: z.string().email().optional().or(z.literal("")),
   address: z.string().min(5),
   notes: z.string().optional()
 });
@@ -48,7 +48,8 @@ export async function POST(request: Request) {
     if (serviceError || !service) throw new Error("Selected service is unavailable.");
     if (addonsError) throw addonsError;
 
-    const durationMinutes = service.duration_minutes + (addons ?? []).reduce((sum, addon) => sum + addon.extra_minutes, 0);
+    const baseDurationMinutes = getServiceDurationMinutes(service.name, service.duration_minutes);
+    const durationMinutes = baseDurationMinutes + (addons ?? []).reduce((sum, addon) => sum + addon.extra_minutes, 0);
     const start = new Date(payload.startTime);
 
     if (Number.isNaN(start.getTime()) || start.getTime() < Date.now()) {
@@ -77,9 +78,11 @@ export async function POST(request: Request) {
 
     const estimatedTotal = service.base_price_cents + (addons ?? []).reduce((sum, addon) => sum + addon.price_cents, 0);
 
+    const customerEmail = payload.email || `${payload.phone}@no-email.local`;
+
     const { data: customer, error: customerError } = await supabaseAdmin
       .from("customers")
-      .insert({ owner_id: ownerId, name: payload.name, email: payload.email, phone: payload.phone })
+      .insert({ owner_id: ownerId, name: payload.name, email: customerEmail, phone: payload.phone })
       .select("id")
       .single();
 
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
       vehicleSize: payload.vehicleSize,
       customerName: payload.name,
       phone: payload.phone,
-      email: payload.email,
+      email: payload.email || "Not provided",
       address: payload.address,
       addons: (addons ?? []).map((addon) => addon.name),
       notes: payload.notes,
@@ -121,7 +124,7 @@ export async function POST(request: Request) {
 
     await sendBookingEmails({
       ownerEmail: process.env.OWNER_NOTIFICATION_EMAIL ?? "",
-      customerEmail: payload.email,
+      customerEmail: customerEmail,
       customerName: payload.name,
       service: service.name,
       dateTime: start.toLocaleString("en-US")

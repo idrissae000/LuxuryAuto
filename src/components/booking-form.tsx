@@ -1,243 +1,287 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { defaultAddons, defaultServices } from "@/lib/data";
-import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { Addon, Service } from "@/lib/types";
+import { X } from "lucide-react";
+import { defaultServices } from "@/lib/data";
+import { formatCurrency } from "@/lib/utils";
+import { Service } from "@/lib/types";
+import { getServiceDurationMinutes } from "@/lib/constants";
 
 type Slot = { start: string; label: string };
 
-export function BookingForm() {
+type BookingFormProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+export function BookingForm({ isOpen, onClose }: BookingFormProps) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [services, setServices] = useState<Service[]>(defaultServices);
-  const [addonsCatalog, setAddonsCatalog] = useState<Addon[]>(defaultAddons);
-  const [catalogSource, setCatalogSource] = useState<"database" | "fallback">("fallback");
   const [serviceId, setServiceId] = useState(defaultServices[0].id);
   const [vehicleSize, setVehicleSize] = useState("Sedan");
-  const [addonIds, setAddonIds] = useState<string[]>([]);
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [startTime, setStartTime] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [details, setDetails] = useState({ name: "", email: "", phone: "", address: "", notes: "" });
+  const [details, setDetails] = useState({ name: "", phone: "", address: "", email: "", notes: "" });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     (async () => {
       const res = await fetch("/api/catalog");
       if (!res.ok) return;
       const json = await res.json();
       if (Array.isArray(json.services) && json.services.length > 0) {
         setServices(json.services);
-        setServiceId(json.services[0].id);
-      }
-      if (Array.isArray(json.addons)) {
-        setAddonsCatalog(json.addons);
-      }
-      if (json.source === "database" || json.source === "fallback") {
-        setCatalogSource(json.source);
+        setServiceId((prev) => (json.services.some((service: Service) => service.id === prev) ? prev : json.services[0].id));
       }
     })();
-  }, []);
+  }, [isOpen]);
 
-  const service = useMemo(() => services.find((item) => item.id === serviceId) ?? services[0], [services, serviceId]);
-  const addons = useMemo(() => addonsCatalog.filter((addon) => addonIds.includes(addon.id)), [addonsCatalog, addonIds]);
-  const total = (service?.base_price_cents ?? 0) + addons.reduce((sum, addon) => sum + addon.price_cents, 0);
+  const selectedService = useMemo(
+    () => services.find((service) => service.id === serviceId) ?? services[0],
+    [serviceId, services]
+  );
 
-  const fetchAvailability = async () => {
-    if (!date || !service) return;
-    setLoadingSlots(true);
-    setError(null);
-    const durationMinutes = service.duration_minutes + addons.reduce((sum, addon) => sum + addon.extra_minutes, 0);
+  const normalizedPhone = details.phone.replace(/\D/g, "").slice(0, 10);
+  const serviceDuration = selectedService
+    ? getServiceDurationMinutes(selectedService.name, selectedService.duration_minutes)
+    : 60;
 
-    const res = await fetch("/api/availability", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, durationMinutes })
-    });
-
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error || "Unable to load availability.");
+  useEffect(() => {
+    if (!date || !selectedService || !isOpen) {
       setSlots([]);
-    } else {
-      setSlots(json.slots);
+      setStartTime("");
+      return;
     }
 
-    setLoadingSlots(false);
-  };
+    const controller = new AbortController();
+
+    const load = async () => {
+      setLoadingSlots(true);
+      setError(null);
+      const res = await fetch("/api/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, durationMinutes: serviceDuration }),
+        signal: controller.signal
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Unable to load availability.");
+        setSlots([]);
+      } else {
+        setSlots(json.slots);
+      }
+
+      setLoadingSlots(false);
+    };
+
+    load().catch(() => {
+      if (!controller.signal.aborted) {
+        setError("Unable to load availability.");
+        setLoadingSlots(false);
+      }
+    });
+
+    return () => controller.abort();
+  }, [date, selectedService, serviceDuration, isOpen]);
+
+  if (!isOpen) return null;
+
+  const canSubmit = Boolean(
+    selectedService &&
+      date &&
+      startTime &&
+      details.name.trim().length >= 2 &&
+      /^\d{10}$/.test(normalizedPhone) &&
+      details.address.trim().length >= 5
+  );
 
   const submitBooking = async () => {
-    if (!service) return;
+    if (!selectedService || !canSubmit) return;
     setSubmitting(true);
     setError(null);
 
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ serviceId, vehicleSize, addonIds, startTime, ...details })
+      body: JSON.stringify({
+        serviceId,
+        vehicleSize,
+        addonIds: [],
+        startTime,
+        name: details.name.trim(),
+        phone: normalizedPhone,
+        email: details.email.trim(),
+        address: details.address.trim(),
+        notes: details.notes.trim()
+      })
     });
 
     const json = await res.json();
     if (!res.ok) {
-      setError(json.error || "Unable to complete booking.");
+      if (res.status === 409) {
+        setStartTime("");
+        setError("That slot was just taken. Pick another time.");
+        setDate((current) => `${current}`);
+      } else {
+        setError(json.error || "Unable to complete booking.");
+      }
       setSubmitting(false);
       return;
     }
 
+    onClose();
     router.push(`/book/confirmation?id=${json.bookingId}`);
   };
 
-  const toggleAddon = (id: string) => {
-    setAddonIds((prev) => (prev.includes(id) ? prev.filter((addonId) => addonId !== id) : [...prev, id]));
-  };
-
-  const next = () => setStep((prev) => Math.min(5, prev + 1));
-  const back = () => setStep((prev) => Math.max(1, prev - 1));
-
   return (
-    <div className="card space-y-6 bg-gradient-to-b from-white/5 to-transparent">
-      <div className="flex items-center justify-between text-sm text-white/70">
-        <span>Step {step} of 5</span>
-        <span className="rounded-full border border-brand-blue/40 px-3 py-1 text-xs text-brand-blue">
-          {catalogSource === "database" ? "Live DB" : "Fallback"}
-        </span>
-      </div>
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div className="modal-panel" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Book appointment">
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/60 p-2 text-white/80 transition hover:text-white"
+          aria-label="Close booking"
+        >
+          <X size={18} />
+        </button>
 
-      {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Choose your detail package</h2>
-          <p className="text-sm text-white/60">Tip: double-click a package on desktop to instantly continue.</p>
-          {services.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setServiceId(item.id)}
-              onDoubleClick={() => {
-                setServiceId(item.id);
-                setStep(2);
-              }}
-              className={`w-full rounded-xl border p-4 text-left transition ${serviceId === item.id ? "border-brand-blue bg-brand-blue/15 shadow-glow" : "border-white/10 hover:border-white/30"}`}
-            >
-              <p className="font-semibold">{item.name}</p>
-              <p className="text-sm text-white/70">{item.duration_minutes} min • {formatCurrency(item.base_price_cents)}</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Vehicle size</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {["Sedan", "SUV", "Truck"].map((size) => (
-              <button
-                key={size}
-                onClick={() => setVehicleSize(size)}
-                className={`rounded-xl border p-4 transition ${vehicleSize === size ? "border-brand-blue bg-brand-blue/15" : "border-white/10 hover:border-white/30"}`}
-              >
-                {size}
-              </button>
-            ))}
+        <div className="mb-4 flex items-center gap-3 pr-10">
+          <img src="/logo.svg" alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
+          <div>
+            <h2 className="text-2xl font-semibold">Book an Appointment</h2>
+            <p className="text-sm text-white/70">Live availability syncs with your booking calendar.</p>
           </div>
         </div>
-      )}
 
-      {step === 3 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Optional add-on</h2>
-          {addonsCatalog.map((addon) => (
-            <label key={addon.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4">
-              <span>{addon.name}</span>
-              <span className="flex items-center gap-4 text-sm text-white/70">
-                +{formatCurrency(addon.price_cents)}
-                <input type="checkbox" checked={addonIds.includes(addon.id)} onChange={() => toggleAddon(addon.id)} />
-              </span>
+        <div className="soft-rise space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-2 text-sm text-white/80">
+              Service
+              <select
+                value={serviceId}
+                onChange={(event) => {
+                  setServiceId(event.target.value);
+                  setStartTime("");
+                }}
+                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+              >
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} ({getServiceDurationMinutes(service.name, service.duration_minutes)} min)
+                  </option>
+                ))}
+              </select>
             </label>
-          ))}
-        </div>
-      )}
 
-      {step === 4 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Pick date & time</h2>
-          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="space-y-2 text-sm text-white/80">
+              Vehicle
+              <select
+                value={vehicleSize}
+                onChange={(event) => setVehicleSize(event.target.value)}
+                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+              >
+                <option value="Sedan">Sedan</option>
+                <option value="SUV">SUV</option>
+                <option value="Truck">Truck</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="space-y-2 text-sm text-white/80">
+            Appointment date
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-white/20 bg-black px-3 py-2"
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(event) => {
+                setDate(event.target.value);
+                setStartTime("");
+              }}
+              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
             />
-            <button onClick={fetchAvailability} className="rounded-lg bg-brand-blue px-4 py-2 font-semibold shadow-glow">
-              {loadingSlots ? "Loading..." : "Check availability"}
-            </button>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {slots.map((slot) => (
-              <button
-                key={slot.start}
-                onClick={() => setStartTime(slot.start)}
-                className={`rounded-lg border px-3 py-2 ${startTime === slot.start ? "border-brand-blue bg-brand-blue/15" : "border-white/10"}`}
-              >
-                {slot.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+          </label>
 
-      {step === 5 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Your details</h2>
-          {[
-            { key: "name", label: "Full name", type: "text" },
-            { key: "phone", label: "Phone", type: "tel" },
-            { key: "email", label: "Email", type: "email" },
-            { key: "address", label: "Service address", type: "text" }
-          ].map((field) => (
+          <div className="space-y-2">
+            <p className="text-sm text-white/80">Available times</p>
+            {loadingSlots && <p className="text-sm text-white/60">Loading available times...</p>}
+            {!loadingSlots && date && slots.length === 0 && <p className="text-sm text-white/60">No slots available for this date.</p>}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {slots.map((slot) => (
+                <button
+                  key={slot.start}
+                  onClick={() => setStartTime(slot.start)}
+                  className={`rounded-xl border px-3 py-2 text-sm transition ${startTime === slot.start ? "border-brand-blue bg-brand-blue/20 shadow-glow" : "border-white/20 bg-black/50 hover:border-white/40"}`}
+                >
+                  {slot.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
             <input
-              key={field.key}
               required
-              placeholder={field.label}
-              type={field.type}
-              value={details[field.key as keyof typeof details]}
-              onChange={(e) => setDetails((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              className="w-full rounded-lg border border-white/20 bg-black px-3 py-2"
+              placeholder="Full name"
+              value={details.name}
+              onChange={(event) => setDetails((prev) => ({ ...prev, name: event.target.value }))}
+              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
             />
-          ))}
-          <textarea
-            placeholder="Notes"
-            value={details.notes}
-            onChange={(e) => setDetails((prev) => ({ ...prev, notes: e.target.value }))}
-            className="w-full rounded-lg border border-white/20 bg-black px-3 py-2"
+            <input
+              required
+              placeholder="Phone (10 digits)"
+              value={normalizedPhone}
+              inputMode="numeric"
+              maxLength={10}
+              onChange={(event) => setDetails((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))}
+              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+            />
+          </div>
+
+          <input
+            required
+            placeholder="Service address"
+            value={details.address}
+            onChange={(event) => setDetails((prev) => ({ ...prev, address: event.target.value }))}
+            className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
           />
-          <div className="text-sm text-white/70">Estimated total: {formatCurrency(total)}</div>
+
+          <input
+            placeholder="Email (optional)"
+            type="email"
+            value={details.email}
+            onChange={(event) => setDetails((prev) => ({ ...prev, email: event.target.value }))}
+            className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+          />
+
+          <textarea
+            placeholder="Notes (optional)"
+            value={details.notes}
+            onChange={(event) => setDetails((prev) => ({ ...prev, notes: event.target.value }))}
+            className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+          />
+
+          <div className="flex items-center justify-between text-sm text-white/70">
+            <span>{serviceDuration} minute service</span>
+            <span>From {selectedService ? formatCurrency(selectedService.base_price_cents) : "—"}</span>
+          </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
           <button
             onClick={submitBooking}
-            disabled={submitting}
-            className="w-full rounded-lg bg-brand-blue px-4 py-3 font-semibold shadow-glow disabled:opacity-50"
+            disabled={submitting || !canSubmit}
+            className="w-full rounded-xl bg-brand-blue px-4 py-3 font-semibold shadow-glow transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Submitting..." : "Confirm booking"}
+            {submitting ? "Booking..." : "Confirm appointment"}
           </button>
         </div>
-      )}
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button onClick={back} disabled={step === 1} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/70 disabled:opacity-40">
-          Back
-        </button>
-        {step < 5 && (
-          <button
-            onClick={next}
-            className="rounded-xl bg-brand-blue px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-glow transition hover:brightness-110"
-          >
-            Next Step
-          </button>
-        )}
       </div>
     </div>
   );

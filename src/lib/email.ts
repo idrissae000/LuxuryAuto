@@ -13,18 +13,25 @@ export const sendBookingEmails = async (payload: {
     return;
   }
 
-  await Promise.all([
+  const jobs = [
     resend.emails.send({
       from: "Luxury Auto Detailz <bookings@luxuryautodetailz.com>",
       to: payload.ownerEmail,
       subject: `New booking: ${payload.service}`,
       html: `<p>New booking from ${payload.customerName} for ${payload.service} at ${payload.dateTime}.</p>`
-    }),
-    resend.emails.send({
-      from: "Luxury Auto Detailz <bookings@luxuryautodetailz.com>",
-      to: payload.customerEmail,
-      subject: "Your Luxury Auto Detailz booking is confirmed",
-      html: `<p>Hi ${payload.customerName}, your ${payload.service} appointment is confirmed for ${payload.dateTime}.</p>`
     })
-  ]);
+  ];
+
+  if (!payload.customerEmail.endsWith("@no-email.local")) {
+    jobs.push(
+      resend.emails.send({
+        from: "Luxury Auto Detailz <bookings@luxuryautodetailz.com>",
+        to: payload.customerEmail,
+        subject: "Your Luxury Auto Detailz booking is confirmed",
+        html: `<p>Hi ${payload.customerName}, your ${payload.service} appointment is confirmed for ${payload.dateTime}.</p>`
+      })
+    );
+  }
+
+  await Promise.all(jobs);
 };

@@ -74,9 +74,9 @@ as $$
 begin
   insert into public.services (id, owner_id, name, description, base_price_cents, duration_minutes)
   values
-    ('11111111-1111-1111-1111-111111111111', p_owner_id, 'Interior Detail', 'Deep clean of seats, carpets, dashboard, and interior surfaces.', 16000, 120),
-    ('22222222-2222-2222-2222-222222222222', p_owner_id, 'Exterior Detail', 'Foam wash, decontamination, hand dry, and premium wax seal.', 14000, 90),
-    ('33333333-3333-3333-3333-333333333333', p_owner_id, 'Full Vehicle Detail', 'Complete interior + exterior transformation.', 28500, 210)
+    ('11111111-1111-1111-1111-111111111111', p_owner_id, 'Interior Detail', 'Deep clean of seats, carpets, dashboard, and interior surfaces.', 16000, 60),
+    ('22222222-2222-2222-2222-222222222222', p_owner_id, 'Exterior Detail', 'Foam wash, decontamination, hand dry, and premium wax seal.', 14000, 60),
+    ('33333333-3333-3333-3333-333333333333', p_owner_id, 'Full Vehicle Detail', 'Complete interior + exterior transformation.', 28500, 120)
   on conflict (id) do nothing;
 
   insert into public.addons (id, owner_id, name, price_cents, extra_minutes)
