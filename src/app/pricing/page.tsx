@@ -18,7 +18,7 @@ export default function PricingPage() {
             <p className="mt-3 text-brand-blue">{service.duration_minutes} min</p>
             <p className="mt-1 text-2xl font-semibold">{formatCurrency(service.base_price_cents)}</p>
             <p className="mt-4 text-sm text-white/70">Vehicle size selected at booking (Sedan/SUV/Truck).</p>
-            <Link href="/book" className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold">Book</Link>
+            <Link href="/book/" className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold">Book</Link>
           </article>
         ))}
       </div>

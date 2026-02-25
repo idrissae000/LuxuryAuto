@@ -22,7 +22,7 @@ export default function HomePage() {
               Premium mobile detailing based in Cypress, Texas. Clean finish, clear communication, and reliable appointments.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Link href="/book" className="rounded-full bg-brand-blue px-6 py-3 font-semibold shadow-glow">Book Now</Link>
+              <Link href="/book/" className="rounded-full bg-brand-blue px-6 py-3 font-semibold shadow-glow">Book Now</Link>
               <Link href="/pricing" className="rounded-full border border-white/20 px-6 py-3 font-semibold">View Pricing</Link>
             </div>
           </div>
