@@ -20,13 +20,17 @@ const asBusyWindows = (value: unknown): BusyWindow[] => {
 
 export async function POST(request: Request) {
   try {
-    const ownerId = process.env.DEFAULT_OWNER_ID;
-    if (!ownerId) throw new Error("DEFAULT_OWNER_ID env var missing.");
-
     const payload = schema.parse(await request.json());
     const slots = generateCandidateSlots(payload.date, payload.durationMinutes);
     if (!slots.length) {
       return NextResponse.json({ slots: [] });
+    }
+
+    const ownerId = process.env.DEFAULT_OWNER_ID;
+    if (!ownerId) {
+      return NextResponse.json({
+        slots: slots.map((slot) => ({ start: slot.start.toISOString(), label: toLocalLabel(slot.start) }))
+      });
     }
 
     const busyRaw = await getBusyWindowsCombined(

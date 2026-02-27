@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "local-dev-service-role-key";
+
+export const isSupabaseConfigured = () =>
+  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);

@@ -13,9 +13,10 @@ type Slot = { start: string; label: string };
 type BookingFormProps = {
   isOpen: boolean;
   onClose: () => void;
+  selectedServiceId?: string;
 };
 
-export function BookingForm({ isOpen, onClose }: BookingFormProps) {
+export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormProps) {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>(defaultServices);
   const [serviceId, setServiceId] = useState(defaultServices[0].id);
@@ -28,6 +29,21 @@ export function BookingForm({ isOpen, onClose }: BookingFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [details, setDetails] = useState({ name: "", phone: "", address: "", email: "", notes: "" });
 
+
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)})-${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)})-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
+  useEffect(() => {
+    if (isOpen && selectedServiceId) {
+      setServiceId(selectedServiceId);
+      setStartTime("");
+    }
+  }, [isOpen, selectedServiceId]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -37,17 +53,25 @@ export function BookingForm({ isOpen, onClose }: BookingFormProps) {
       const json = await res.json();
       if (Array.isArray(json.services) && json.services.length > 0) {
         setServices(json.services);
-        setServiceId((prev) => (json.services.some((service: Service) => service.id === prev) ? prev : json.services[0].id));
+        setServiceId((prev) => {
+          if (selectedServiceId && json.services.some((service: Service) => service.id === selectedServiceId)) {
+            return selectedServiceId;
+          }
+          if (json.services.some((service: Service) => service.id === prev)) {
+            return prev;
+          }
+          return json.services[0].id;
+        });
       }
     })();
-  }, [isOpen]);
+  }, [isOpen, selectedServiceId]);
 
   const selectedService = useMemo(
     () => services.find((service) => service.id === serviceId) ?? services[0],
     [serviceId, services]
   );
 
-  const normalizedPhone = details.phone.replace(/\D/g, "").slice(0, 10);
+  const normalizedPhone = details.phone;
   const serviceDuration = selectedService
     ? getServiceDurationMinutes(selectedService.name, selectedService.duration_minutes)
     : 60;
@@ -236,10 +260,12 @@ export function BookingForm({ isOpen, onClose }: BookingFormProps) {
             <input
               required
               placeholder="Phone (10 digits)"
-              value={normalizedPhone}
+              value={formatPhoneNumber(details.phone)}
               inputMode="numeric"
-              maxLength={10}
-              onChange={(event) => setDetails((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))}
+              maxLength={14}
+              onChange={(event) =>
+                setDetails((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))
+              }
               className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
             />
           </div>
