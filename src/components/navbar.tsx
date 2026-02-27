@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookNowButton } from "@/components/book-now-button";
 
 const links = [
   { href: "/", label: "Home" },
@@ -24,12 +25,9 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/book/"
-            className="rounded-full bg-brand-blue px-4 py-2 font-semibold text-white shadow-glow transition hover:brightness-110"
-          >
+          <BookNowButton className="rounded-full bg-brand-blue px-4 py-2 font-semibold text-white shadow-glow transition hover:brightness-110">
             Book Now
-          </Link>
+          </BookNowButton>
         </div>
       </nav>
     </header>
