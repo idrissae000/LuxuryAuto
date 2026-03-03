@@ -2,16 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookNowButton } from "@/components/book-now-button";
 import { defaultServices, faqs } from "@/lib/data";
+import { getGalleryImages } from "@/lib/gallery";
 import { formatCurrency } from "@/lib/utils";
 
-const gallery = [
-  "https://images.unsplash.com/photo-1485463611174-f302f6a5c1c9?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=800&q=80"
-];
+export default async function HomePage() {
+  const gallery = await getGalleryImages();
 
-export default function HomePage() {
   return (
     <>
       <section className="section-shell">

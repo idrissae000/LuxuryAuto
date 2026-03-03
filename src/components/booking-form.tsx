@@ -177,7 +177,10 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
         </button>
 
         <div className="mb-4 flex items-center gap-3 pr-10">
-          <img src="/logo.svg" alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
+          <picture>
+            <source srcSet="/logo.png" type="image/png" />
+            <img src="/logo.svg" alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
+          </picture>
           <div>
             <h2 className="text-2xl font-semibold">Book an Appointment</h2>
             <p className="text-sm text-white/70">Live availability syncs with your booking calendar.</p>

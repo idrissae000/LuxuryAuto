@@ -152,3 +152,13 @@ If you changed Output Directory to `out`, remove it. This app uses server routes
 
 ## Legal
 - Public terms page available at `/terms`.
+
+
+## Add Your Logo & Photos (No Code Needed)
+1. Save your official logo image as **`public/logo.png`** (exact filename).
+2. Add your detailing photos to **`public/gallery/`** (supported: `.jpg`, `.jpeg`, `.png`, `.webp`).
+3. Restart/redeploy and your photos/logo will render automatically.
+
+Notes:
+- The app already prefers `logo.png` and falls back to `logo.svg` if `logo.png` is missing.
+- Gallery files are auto-detected from `public/gallery/`; if none exist, fallback placeholders are shown.
