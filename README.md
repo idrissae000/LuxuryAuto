@@ -182,3 +182,11 @@ Do this:
 3. Redeploy.
 
 This repo also runs a prebuild cleanup script (`scripts/resolve-router-conflicts.mjs`) to remove those legacy files if they accidentally exist during build.
+
+
+## Security Upgrade Note (Next.js)
+If Vercel reports a vulnerable Next.js version:
+1. Pull latest changes.
+2. Run `npm install` locally to update dependencies from `package.json`.
+3. Commit and push lockfile updates (if your repo uses a lockfile).
+4. Redeploy.
