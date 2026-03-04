@@ -7,6 +7,7 @@ import { defaultServices } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import { Service } from "@/lib/types";
 import { getServiceDurationMinutes } from "@/lib/constants";
+import { LogoImage } from "@/components/logo-image";
 
 type Slot = { start: string; label: string };
 
@@ -177,10 +178,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
         </button>
 
         <div className="mb-4 flex items-center gap-3 pr-10">
-          <picture>
-            <source srcSet="/logo.png" type="image/png" />
-            <img src="/logo.svg" alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
-          </picture>
+          <LogoImage alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
           <div>
             <h2 className="text-2xl font-semibold">Book an Appointment</h2>
             <p className="text-sm text-white/70">Live availability syncs with your booking calendar.</p>

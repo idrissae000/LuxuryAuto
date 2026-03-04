@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookNowButton } from "@/components/book-now-button";
+import { LogoImage } from "@/components/logo-image";
 
 const links = [
   { href: "/", label: "Home" },
@@ -13,10 +14,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <picture>
-            <source srcSet="/logo.png" type="image/png" />
-            <img src="/logo.svg" alt="Luxury Auto Detailz" width={42} height={42} className="rounded-full" />
-          </picture>
+          <LogoImage alt="Luxury Auto Detailz" width={42} height={42} className="rounded-full" />
           <span className="text-sm font-semibold uppercase tracking-[0.2em]">Luxury Auto Detailz</span>
         </Link>
         <div className="flex items-center gap-5 text-sm">

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BookNowButton } from "@/components/book-now-button";
+import { LogoImage } from "@/components/logo-image";
 import { defaultServices, faqs } from "@/lib/data";
 import { getGalleryImages } from "@/lib/gallery";
 import { formatCurrency } from "@/lib/utils";
@@ -24,10 +25,7 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="card bg-gradient-to-br from-brand-slate to-black">
-            <picture>
-              <source srcSet="/logo.png" type="image/png" />
-              <img src="/logo.svg" alt="Luxury Auto Detailz logo" width={480} height={480} className="mx-auto rounded-3xl" />
-            </picture>
+            <LogoImage alt="Luxury Auto Detailz logo" width={480} height={480} className="mx-auto rounded-3xl" />
           </div>
         </div>
       </section>

@@ -162,3 +162,8 @@ If you changed Output Directory to `out`, remove it. This app uses server routes
 Notes:
 - The app already prefers `logo.png` and falls back to `logo.svg` if `logo.png` is missing.
 - Gallery files are auto-detected from `public/gallery/`; if none exist, fallback placeholders are shown.
+
+Troubleshooting logo not showing:
+- Open `http://localhost:3000/logo.png` directly. If it does not load, the file may be invalid or not actually PNG.
+- Re-export the logo as a real PNG and overwrite `public/logo.png`.
+- Hard refresh browser (`Ctrl+Shift+R`) after replacing the file.
