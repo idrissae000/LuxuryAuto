@@ -167,3 +167,18 @@ Troubleshooting logo not showing:
 - Open `http://localhost:3000/logo.png` directly. If it does not load, the file may be invalid or not actually PNG.
 - Re-export the logo as a real PNG and overwrite `public/logo.png`.
 - Hard refresh browser (`Ctrl+Shift+R`) after replacing the file.
+
+
+## Vercel Error: Conflicting app and pages files
+If Vercel reports conflicts like:
+- `pages/api/availability.js` vs `app/api/availability/route.ts`
+- `pages/book.js` vs `app/book/page.tsx`
+
+Do this:
+1. Ensure your Vercel **Root Directory** points to this repo root (`LuxuryAuto`) and not a parent folder.
+2. Remove legacy files from your branch/repo if they exist:
+   - `pages/book.js`
+   - `pages/api/availability.js`
+3. Redeploy.
+
+This repo also runs a prebuild cleanup script (`scripts/resolve-router-conflicts.mjs`) to remove those legacy files if they accidentally exist during build.
