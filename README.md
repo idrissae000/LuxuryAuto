@@ -190,3 +190,14 @@ If Vercel reports a vulnerable Next.js version:
 2. Run `npm install` locally to update dependencies from `package.json`.
 3. Commit and push lockfile updates (if your repo uses a lockfile).
 4. Redeploy.
+
+
+## Vercel Error: Cannot find module ../../app/.../page.js
+If build fails with:
+`Cannot find module '../../app/admin/bookings/[id]/page.js'`
+
+This is usually caused by stale generated route typings in `.next/types` or over-broad TypeScript includes.
+
+Fixes already in this repo:
+- `prebuild` clears `.next/types`.
+- `tsconfig.json` only includes `src/**/*.ts` and `src/**/*.tsx` (not `.next/types`).

@@ -26,6 +26,10 @@ const run = async () => {
   if (removed === 0) {
     console.log("[prebuild] no legacy pages/app route conflicts found");
   }
+
+  // prevent stale generated route typings from previous cached builds
+  await rm(".next/types", { recursive: true, force: true });
+  console.log("[prebuild] cleared stale .next/types cache");
 };
 
 run().catch((error) => {
