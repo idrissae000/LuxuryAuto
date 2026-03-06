@@ -3,6 +3,8 @@ import { defaultAddons, defaultServices } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
 export default function PricingPage() {
+  const addon = defaultAddons[0];
+
   return (
     <section className="section-shell space-y-12">
       <div>
@@ -17,7 +19,7 @@ export default function PricingPage() {
             <p className="mt-2 text-white/70">{service.description}</p>
             <p className="mt-3 text-brand-blue">{service.duration_minutes} min</p>
             <p className="mt-1 text-2xl font-semibold">{formatCurrency(service.base_price_cents)}</p>
-            <p className="mt-4 text-sm text-white/70">Vehicle size selected at booking (Sedan/SUV/Truck).</p>
+            <p className="mt-4 text-sm text-white/70">Booking is completed directly on this website.</p>
             <BookNowButton serviceId={service.id} className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold">Book</BookNowButton>
           </article>
         ))}
@@ -25,10 +27,16 @@ export default function PricingPage() {
 
       <div className="card">
         <h3 className="text-2xl font-semibold">Optional Add-on</h3>
-        <p className="mt-3 text-white/70">Most extras are already included in detailing packages. The only optional add-on is:</p>
-        <div className="mt-4 rounded-xl border border-white/10 p-4 text-white/80">
-          {defaultAddons[0].name} — {formatCurrency(defaultAddons[0].price_cents)}
-        </div>
+        {addon ? (
+          <>
+            <p className="mt-3 text-white/70">Most extras are already included in detailing packages. The only optional add-on is:</p>
+            <div className="mt-4 rounded-xl border border-white/10 p-4 text-white/80">
+              {addon.name} — {formatCurrency(addon.price_cents)}
+            </div>
+          </>
+        ) : (
+          <p className="mt-3 text-white/70">No add-ons are currently offered. All services are fully bundled.</p>
+        )}
       </div>
     </section>
   );

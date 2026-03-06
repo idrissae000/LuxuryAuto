@@ -1,21 +1,27 @@
 import { google } from "googleapis";
 import { BUSINESS_TIMEZONE } from "@/lib/constants";
 
-type BusyWindow = { start: string; end: string };
+export type BusyWindow = { start: string; end: string };
 
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
 export const isGoogleCalendarConfigured = () =>
-  Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && calendarId);
+  Boolean(
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+      (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY) &&
+      calendarId
+  );
 
 const getCalendarClient = () => {
   if (!isGoogleCalendarConfigured()) {
     return null;
   }
 
+  const privateKey = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ?? process.env.GOOGLE_PRIVATE_KEY)?.replace(/\\n/g, "\n");
+
   const auth = new google.auth.JWT({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    key: privateKey,
     scopes: ["https://www.googleapis.com/auth/calendar"]
   });
 
@@ -42,39 +48,38 @@ export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string)
   });
 };
 
-export const createCalendarEvent = async (payload: {
+export const createGoogleBookingEvent = async (payload: {
   start: string;
   end: string;
-  serviceName: string;
-  vehicleSize: string;
+  service: string;
   customerName: string;
   phone: string;
-  email: string;
   address: string;
-  addons: string[];
+  email?: string;
   notes?: string;
-  estimatedTotal: string;
 }) => {
   const calendar = getCalendarClient();
   if (!calendar || !calendarId) {
-    return null;
+    throw new Error("Google Calendar is not configured. Add service account env vars and calendar ID.");
   }
+
+  const attendees = payload.email ? [{ email: payload.email }] : undefined;
 
   const response = await calendar.events.insert({
     calendarId,
     requestBody: {
-      summary: `Luxury Auto Detailz — ${payload.serviceName} (${payload.vehicleSize})`,
+      summary: `${payload.service} — ${payload.customerName}`,
       description: [
-        `Customer: ${payload.customerName}`,
+        `Name: ${payload.customerName}`,
         `Phone: ${payload.phone}`,
-        `Email: ${payload.email}`,
         `Address: ${payload.address}`,
-        `Add-ons: ${payload.addons.length ? payload.addons.join(", ") : "None"}`,
-        `Notes: ${payload.notes || "N/A"}`,
-        `Estimated total: ${payload.estimatedTotal}`
+        `Service: ${payload.service}`,
+        `Email: ${payload.email || "Not provided"}`,
+        `Notes: ${payload.notes || "N/A"}`
       ].join("\n"),
       start: { dateTime: payload.start, timeZone: BUSINESS_TIMEZONE },
-      end: { dateTime: payload.end, timeZone: BUSINESS_TIMEZONE }
+      end: { dateTime: payload.end, timeZone: BUSINESS_TIMEZONE },
+      attendees
     }
   });
 

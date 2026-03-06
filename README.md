@@ -33,7 +33,7 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
    ```sql
    select public.seed_default_catalog('<ADMIN_USER_UUID>'::uuid);
    ```
-7. Set `DEFAULT_OWNER_ID` in env to the same admin UUID.
+7. (Optional for admin data) Set `DEFAULT_OWNER_ID` in env to the same admin UUID.
 8. Run app:
    ```bash
    npm run dev
@@ -46,7 +46,8 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
 4. Share your target Google Calendar with the service-account email and grant **Make changes to events**.
 5. Set these environment variables in local + Vercel and redeploy:
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-   - `GOOGLE_PRIVATE_KEY` (preserve newline escapes)
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (preserve newline escapes)
+   - Fallback supported: `GOOGLE_PRIVATE_KEY`
    - `GOOGLE_CALENDAR_ID`
 
 > The app can run **before** Google Calendar is connected. In that mode, booking conflict checks still use your Supabase `bookings` table so you can test end-to-end flows. Once Google vars are added, Google free/busy + event creation are used automatically.
@@ -65,7 +66,8 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
 
 ## Pre‑Vercel Deployment Debug Checklist (Must Pass)
 1. **Environment vars configured in Vercel**
-   - Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEFAULT_OWNER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`.
+   - Required for website booking + availability: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (or `GOOGLE_PRIVATE_KEY`), `GOOGLE_CALENDAR_ID`, `BOOKING_TZ`.
+   - Optional/legacy for admin/Supabase features: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEFAULT_OWNER_ID`.
    - Optional: `RESEND_API_KEY`, `OWNER_NOTIFICATION_EMAIL`.
 2. **Supabase migration applied** and `seed_default_catalog()` executed with the real owner UUID.
 3. **Google Calendar shared correctly** with service account email and edit permission.
@@ -98,8 +100,8 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `DEFAULT_OWNER_ID`
-4. (Optional for first test) Leave Google vars empty; app will still run using DB overlap checks.
+   - `DEFAULT_OWNER_ID` (optional for admin/Supabase features)
+4. For Google-driven booking, add Google vars before testing availability.
 5. Ensure Supabase migration was run and catalog seeded:
    ```sql
    select public.seed_default_catalog('<ADMIN_USER_UUID>'::uuid);
@@ -111,7 +113,7 @@ Production-ready Next.js + Supabase + Google Calendar web app for a mobile detai
    - `/admin/dashboard` shows the booking
 8. When ready to enable Google sync, add:
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-   - `GOOGLE_PRIVATE_KEY`
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (or `GOOGLE_PRIVATE_KEY`)
    - `GOOGLE_CALENDAR_ID`
    then redeploy and verify event creation.
 
@@ -137,9 +139,9 @@ Use these exact settings:
 If you changed Output Directory to `out`, remove it. This app uses server routes (`/api/*`) and SSR admin pages, so static export output is not compatible.
 
 ## Common Deployment Mistakes to Avoid
-- Using a placeholder/incorrect `DEFAULT_OWNER_ID` (breaks catalog lookup and booking inserts).
+- Using a placeholder/incorrect `DEFAULT_OWNER_ID` (affects Supabase-backed catalog/admin views).
 - Forgetting to run `seed_default_catalog` for the real owner.
-- Private key formatting issues (`GOOGLE_PRIVATE_KEY` must keep escaped newlines).
+- Private key formatting issues (`GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` / `GOOGLE_PRIVATE_KEY` must keep escaped newlines).
 - Not sharing the calendar with service account write permissions.
 - Missing SSR middleware causing admin auth session mismatch.
 
@@ -200,4 +202,16 @@ This is usually caused by stale generated route typings in `.next/types` or over
 
 Fixes already in this repo:
 - `prebuild` clears `.next/types`.
-- `tsconfig.json` only includes `src/**/*.ts` and `src/**/*.tsx` (not `.next/types`).
+- `prebuild` clears stale `.next/types` before `next build`, preventing stale route type references.
+
+
+## Google-Driven Booking Flow
+- Availability now comes from Google Calendar busy windows (not Supabase booking rows).
+- Booking confirmation re-checks Google availability and creates a Google Calendar event directly.
+- Business rules used by the website booking flow:
+  - Interior Detail: 90 minutes
+  - Exterior Detail: 90 minutes
+  - Full Detail: 180 minutes
+  - Buffer between appointments: 15 minutes
+  - Hours: 9:00 AM–6:00 PM
+  - Time zone: `BOOKING_TZ` (default `America/Chicago`)

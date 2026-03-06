@@ -1,63 +1,54 @@
 import { NextResponse } from "next/server";
 import { addMinutes } from "date-fns";
 import { z } from "zod";
-import { createCalendarEvent } from "@/lib/google-calendar";
-import { formatCurrency } from "@/lib/utils";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { defaultServices } from "@/lib/data";
 import { TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
 import { sendBookingEmails } from "@/lib/email";
+import { intersects } from "@/lib/utils";
 import { generateCandidateSlots } from "@/lib/scheduling";
-import { getBusyWindowsCombined } from "@/lib/booking-conflicts";
+import { createGoogleBookingEvent, getBusyWindowsFromGoogle, isGoogleCalendarConfigured } from "@/lib/google-calendar";
 
 const schema = z.object({
-  serviceId: z.string().uuid(),
-  vehicleSize: z.enum(["Sedan", "SUV", "Truck"]),
-  addonIds: z.array(z.string().uuid()),
+  serviceId: z.string().uuid().optional(),
+  serviceName: z.string().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().datetime(),
   name: z.string().min(2),
   phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
-  email: z.string().email().optional().or(z.literal("")),
   address: z.string().min(5),
+  email: z.string().email().optional().or(z.literal("")),
   notes: z.string().optional()
 });
 
+const resolveService = (serviceId?: string, serviceName?: string) => {
+  const byId = serviceId ? defaultServices.find((service) => service.id === serviceId) : undefined;
+  const byName = serviceName ? defaultServices.find((service) => service.name === serviceName) : undefined;
+  return byId ?? byName ?? defaultServices[0];
+};
+
 export async function POST(request: Request) {
   try {
+    if (!isGoogleCalendarConfigured()) {
+      return NextResponse.json(
+        { error: "Google Calendar is not configured. Add Google env vars before accepting bookings." },
+        { status: 400 }
+      );
+    }
+
     const payload = schema.parse(await request.json());
-    const ownerId = process.env.DEFAULT_OWNER_ID;
-    if (!ownerId) throw new Error("DEFAULT_OWNER_ID env var missing.");
-
-    const [{ data: service, error: serviceError }, { data: addons, error: addonsError }] = await Promise.all([
-      supabaseAdmin
-        .from("services")
-        .select("id,name,base_price_cents,duration_minutes")
-        .eq("owner_id", ownerId)
-        .eq("is_active", true)
-        .eq("id", payload.serviceId)
-        .single(),
-      payload.addonIds.length
-        ? supabaseAdmin
-            .from("addons")
-            .select("id,name,price_cents,extra_minutes")
-            .eq("owner_id", ownerId)
-            .eq("is_active", true)
-            .in("id", payload.addonIds)
-        : Promise.resolve({ data: [], error: null })
-    ]);
-
-    if (serviceError || !service) throw new Error("Selected service is unavailable.");
-    if (addonsError) throw addonsError;
-
-    const baseDurationMinutes = getServiceDurationMinutes(service.name, service.duration_minutes);
-    const durationMinutes = baseDurationMinutes + (addons ?? []).reduce((sum, addon) => sum + addon.extra_minutes, 0);
+    const service = resolveService(payload.serviceId, payload.serviceName);
+    const durationMinutes = getServiceDurationMinutes(service.name, service.duration_minutes);
     const start = new Date(payload.startTime);
 
     if (Number.isNaN(start.getTime()) || start.getTime() < Date.now()) {
       return NextResponse.json({ error: "Please choose a future appointment time." }, { status: 400 });
     }
 
-    const dateIso = start.toISOString().slice(0, 10);
-    const validSlot = generateCandidateSlots(dateIso, durationMinutes).some(
+    if (!start.toISOString().startsWith(payload.date)) {
+      return NextResponse.json({ error: "Selected date/time mismatch. Please pick your date again." }, { status: 400 });
+    }
+
+    const validSlot = generateCandidateSlots(payload.date, durationMinutes).some(
       (slot) => slot.start.toISOString() === start.toISOString()
     );
 
@@ -67,70 +58,37 @@ export async function POST(request: Request) {
 
     const end = addMinutes(start, durationMinutes);
     const busyCheckEnd = addMinutes(end, TRAVEL_BUFFER_MINUTES);
-    const busy = await getBusyWindowsCombined(ownerId, start.toISOString(), busyCheckEnd.toISOString());
 
-    if (busy.length > 0) {
+    const busy = await getBusyWindowsFromGoogle(start.toISOString(), busyCheckEnd.toISOString());
+    const conflicts = intersects({ start, busyCheckEnd }, busy);
+
+    if (conflicts) {
       return NextResponse.json(
         { error: "That time was just booked—please choose another slot." },
         { status: 409 }
       );
     }
 
-    const estimatedTotal = service.base_price_cents + (addons ?? []).reduce((sum, addon) => sum + addon.price_cents, 0);
-
-    const customerEmail = payload.email || `${payload.phone}@no-email.local`;
-
-    const { data: customer, error: customerError } = await supabaseAdmin
-      .from("customers")
-      .insert({ owner_id: ownerId, name: payload.name, email: customerEmail, phone: payload.phone })
-      .select("id")
-      .single();
-
-    if (customerError || !customer) throw customerError ?? new Error("Unable to create customer.");
-
-    const googleEventId = await createCalendarEvent({
+    const googleEventId = await createGoogleBookingEvent({
       start: start.toISOString(),
       end: end.toISOString(),
-      serviceName: service.name,
-      vehicleSize: payload.vehicleSize,
+      service: service.name,
       customerName: payload.name,
       phone: payload.phone,
-      email: payload.email || "Not provided",
       address: payload.address,
-      addons: (addons ?? []).map((addon) => addon.name),
-      notes: payload.notes,
-      estimatedTotal: formatCurrency(estimatedTotal)
+      email: payload.email || undefined,
+      notes: payload.notes
     });
-
-    const { data: booking, error: bookingError } = await supabaseAdmin
-      .from("bookings")
-      .insert({
-        owner_id: ownerId,
-        customer_id: customer.id,
-        service_id: service.id,
-        vehicle_size: payload.vehicleSize,
-        scheduled_start: start.toISOString(),
-        scheduled_end: end.toISOString(),
-        address: payload.address,
-        notes: payload.notes,
-        status: "scheduled",
-        estimated_total_cents: estimatedTotal,
-        google_event_id: googleEventId ?? undefined
-      })
-      .select("id")
-      .single();
-
-    if (bookingError || !booking) throw bookingError ?? new Error("Unable to create booking.");
 
     await sendBookingEmails({
       ownerEmail: process.env.OWNER_NOTIFICATION_EMAIL ?? "",
-      customerEmail: customerEmail,
+      customerEmail: payload.email || `${payload.phone}@no-email.local`,
       customerName: payload.name,
       service: service.name,
       dateTime: start.toLocaleString("en-US")
     });
 
-    return NextResponse.json({ bookingId: booking.id });
+    return NextResponse.json({ bookingId: googleEventId ?? crypto.randomUUID() });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to book." }, { status: 400 });
   }

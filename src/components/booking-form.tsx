@@ -21,7 +21,6 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
   const router = useRouter();
   const [services, setServices] = useState<Service[]>(defaultServices);
   const [serviceId, setServiceId] = useState(defaultServices[0].id);
-  const [vehicleSize, setVehicleSize] = useState("Sedan");
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [startTime, setStartTime] = useState("");
@@ -29,7 +28,6 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [details, setDetails] = useState({ name: "", phone: "", address: "", email: "", notes: "" });
-
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 10);
@@ -75,7 +73,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
   const normalizedPhone = details.phone;
   const serviceDuration = selectedService
     ? getServiceDurationMinutes(selectedService.name, selectedService.duration_minutes)
-    : 60;
+    : 90;
 
   useEffect(() => {
     if (!date || !selectedService || !isOpen) {
@@ -92,7 +90,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
       const res = await fetch("/api/availability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, durationMinutes: serviceDuration }),
+        body: JSON.stringify({ date, serviceId: selectedService.id, serviceName: selectedService.name }),
         signal: controller.signal
       });
 
@@ -115,7 +113,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
     });
 
     return () => controller.abort();
-  }, [date, selectedService, serviceDuration, isOpen]);
+  }, [date, selectedService, isOpen]);
 
   if (!isOpen) return null;
 
@@ -138,8 +136,8 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         serviceId,
-        vehicleSize,
-        addonIds: [],
+        serviceName: selectedService.name,
+        date,
         startTime,
         name: details.name.trim(),
         phone: normalizedPhone,
@@ -154,7 +152,6 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
       if (res.status === 409) {
         setStartTime("");
         setError("That slot was just taken. Pick another time.");
-        setDate((current) => `${current}`);
       } else {
         setError(json.error || "Unable to complete booking.");
       }
@@ -181,43 +178,28 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
           <LogoImage alt="Luxury Auto Detailz" width={44} height={44} className="rounded-full" />
           <div>
             <h2 className="text-2xl font-semibold">Book an Appointment</h2>
-            <p className="text-sm text-white/70">Live availability syncs with your booking calendar.</p>
+            <p className="text-sm text-white/70">Availability and bookings are powered by Google Calendar.</p>
           </div>
         </div>
 
         <div className="soft-rise space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-2 text-sm text-white/80">
-              Service
-              <select
-                value={serviceId}
-                onChange={(event) => {
-                  setServiceId(event.target.value);
-                  setStartTime("");
-                }}
-                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
-              >
-                {services.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name} ({getServiceDurationMinutes(service.name, service.duration_minutes)} min)
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="space-y-2 text-sm text-white/80">
-              Vehicle
-              <select
-                value={vehicleSize}
-                onChange={(event) => setVehicleSize(event.target.value)}
-                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
-              >
-                <option value="Sedan">Sedan</option>
-                <option value="SUV">SUV</option>
-                <option value="Truck">Truck</option>
-              </select>
-            </label>
-          </div>
+          <label className="space-y-2 text-sm text-white/80">
+            Service
+            <select
+              value={serviceId}
+              onChange={(event) => {
+                setServiceId(event.target.value);
+                setStartTime("");
+              }}
+              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+            >
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} ({getServiceDurationMinutes(service.name, service.duration_minutes)} min)
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label className="space-y-2 text-sm text-white/80">
             Appointment date
