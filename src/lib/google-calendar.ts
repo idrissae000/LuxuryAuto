@@ -3,7 +3,12 @@ import { BUSINESS_TIMEZONE } from "@/lib/constants";
 
 export type BusyWindow = { start: string; end: string };
 
-const calendarId = process.env.GOOGLE_CALENDAR_ID;
+/** Read and trim the calendar ID fresh on every call so that
+ *  (a) trailing whitespace / newlines in the env var don't silently
+ *      break the URL-path based events.insert while the body-based
+ *      freebusy.query still works, and
+ *  (b) the value is always current in serverless / edge runtimes. */
+const getCalendarId = () => (process.env.GOOGLE_CALENDAR_ID ?? "").trim() || undefined;
 
 const googleErrorStatus = (error: unknown) => {
   if (!error || typeof error !== "object") return undefined;
@@ -15,7 +20,7 @@ export const isGoogleCalendarConfigured = () =>
   Boolean(
     process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
       (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY) &&
-      calendarId
+      getCalendarId()
   );
 
 const getCalendarClient = () => {
@@ -35,6 +40,7 @@ const getCalendarClient = () => {
 };
 
 export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string): Promise<BusyWindow[]> => {
+  const calendarId = getCalendarId();
   const calendar = getCalendarClient();
   if (!calendar || !calendarId) return [];
 
@@ -47,7 +53,21 @@ export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string)
     }
   });
 
-  const rawBusy = response.data.calendars?.[calendarId]?.busy ?? [];
+  const calendarData = response.data.calendars?.[calendarId];
+
+  // The freebusy API silently returns errors per-calendar instead of
+  // throwing, so an invalid / inaccessible calendar looked like "no busy
+  // windows" (all slots available) while events.insert later failed with 404.
+  const errors = calendarData?.errors;
+  if (errors && errors.length > 0) {
+    const reason = (errors[0] as { reason?: string }).reason ?? "unknown";
+    throw new Error(
+      `Google Calendar freebusy check failed for calendar "${calendarId}" (${reason}). ` +
+        "Verify GOOGLE_CALENDAR_ID and that the service account has access."
+    );
+  }
+
+  const rawBusy = calendarData?.busy ?? [];
 
   return rawBusy.filter((event): event is { start: string; end: string } => {
     return typeof event.start === "string" && typeof event.end === "string";
@@ -64,6 +84,7 @@ export const createGoogleBookingEvent = async (payload: {
   email?: string;
   notes?: string;
 }) => {
+  const calendarId = getCalendarId();
   const calendar = getCalendarClient();
   if (!calendar || !calendarId) {
     throw new Error("Google Calendar is not configured. Add service account env vars and calendar ID.");
