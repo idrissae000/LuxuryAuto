@@ -7,9 +7,5 @@ type BookPageProps = {
 export default async function BookPage({ searchParams }: BookPageProps) {
   const params = await searchParams;
 
-  return (
-    <section className="section-shell">
-      <BookPageClient selectedServiceId={params?.serviceId} />
-    </section>
-  );
+  return <BookPageClient selectedServiceId={params?.serviceId} />;
 }
