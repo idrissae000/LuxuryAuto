@@ -12,7 +12,10 @@ export function Footer() {
           <p>Call: (832) 555-0113</p>
           <p>Email: hello@luxuryautodetailz.com</p>
           <p>Instagram: @luxuryautodetailz</p>
-          <Link href="/terms" className="mt-2 inline-block text-brand-blue">Terms of Service</Link>
+          <div className="mt-2 flex gap-3 sm:justify-end">
+            <Link href="/privacy-policy" className="text-brand-blue hover:underline">Privacy Policy</Link>
+            <Link href="/terms" className="text-brand-blue hover:underline">Terms &amp; Conditions</Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -240,17 +240,23 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
               onChange={(event) => setDetails((prev) => ({ ...prev, name: event.target.value }))}
               className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
             />
-            <input
-              required
-              placeholder="Phone (10 digits)"
-              value={formatPhoneNumber(details.phone)}
-              inputMode="numeric"
-              maxLength={14}
-              onChange={(event) =>
-                setDetails((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))
-              }
-              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
-            />
+            <div>
+              <input
+                required
+                placeholder="Phone (10 digits)"
+                value={formatPhoneNumber(details.phone)}
+                inputMode="numeric"
+                maxLength={14}
+                onChange={(event) =>
+                  setDetails((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))
+                }
+                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+              />
+              <p className="mt-1 text-xs text-white/50">
+                By providing your phone number, you agree to receive appointment confirmations and reminders via SMS
+                from Luxury Auto Detailz. Message and data rates may apply. Reply STOP to unsubscribe.
+              </p>
+            </div>
           </div>
 
           <input
