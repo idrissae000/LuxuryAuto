@@ -22,7 +22,7 @@ export default function PricingPage() {
             <p className="mt-4 text-sm text-white/70">Booking is completed directly on this website.</p>
             <Link
               href={`/book?serviceId=${service.id}`}
-              className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold"
+              className="btn-primary mt-6 rounded-full px-4 py-2 text-center font-semibold"
             >
               Book
             </Link>

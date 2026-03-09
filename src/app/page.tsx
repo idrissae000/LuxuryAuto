@@ -20,8 +20,8 @@ export default async function HomePage() {
               Premium mobile detailing based in Cypress, Texas. Clean finish, clear communication, and reliable appointments.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <BookNowButton className="rounded-full bg-brand-blue px-6 py-3 font-semibold shadow-glow">Book Now</BookNowButton>
-              <Link href="/pricing" className="rounded-full border border-white/20 px-6 py-3 font-semibold">View Pricing</Link>
+              <BookNowButton className="btn-primary rounded-full px-6 py-3 font-semibold">Book Now</BookNowButton>
+              <Link href="/pricing" className="rounded-full border border-white/20 px-6 py-3 font-semibold transition-colors hover:border-white/40 hover:text-white">View Pricing</Link>
             </div>
           </div>
           <div className="card bg-gradient-to-br from-brand-slate to-black">
@@ -49,7 +49,7 @@ export default async function HomePage() {
         <h2 className="text-3xl font-semibold">Before & After</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {gallery.map((src) => (
-            <Image key={src} src={src} alt="Detailing showcase" width={640} height={420} className="h-64 w-full rounded-2xl object-cover" />
+            <Image key={src} src={src} alt="Detailing showcase" width={640} height={420} className="h-64 w-full rounded-2xl object-cover transition-transform duration-300 hover:scale-[1.02]" />
           ))}
         </div>
       </section>
@@ -58,7 +58,7 @@ export default async function HomePage() {
         <div className="card">
           <h3 className="text-2xl font-semibold">Service Area & Hours</h3>
           <p className="mt-3 text-white/75">Houston Metro • Cypress • Jersey Village • Tomball • Katy</p>
-          <p className="mt-2 text-white/75">Mon–Sat: 9:00 AM – 6:00 PM • Sunday: Closed</p>
+          <p className="mt-2 text-white/75">Mon–Fri: 3:00 PM – 8:00 PM &bull; Sat–Sun: 9:00 AM – 5:00 PM</p>
         </div>
         <div className="card">
           <h3 className="text-2xl font-semibold">FAQ</h3>
