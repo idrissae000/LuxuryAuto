@@ -178,7 +178,16 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
     }
 
     onClose();
-    router.push(`/book/confirmation?id=${json.bookingId}`);
+
+    const confirmParams = new URLSearchParams({
+      id: json.bookingId ?? "",
+      name: details.name.trim(),
+      service: selectedService.name,
+      date,
+      time: startTime,
+      address: details.address.trim(),
+    });
+    router.push(`/book/confirmation?${confirmParams.toString()}`);
   };
 
   return (
