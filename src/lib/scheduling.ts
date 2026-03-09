@@ -1,27 +1,14 @@
-import { addMinutes, isBefore, parse } from "date-fns";
+import { addMinutes, isBefore } from "date-fns";
 import { BUSINESS_TIMEZONE, SLOT_INTERVAL_MINUTES, TRAVEL_BUFFER_MINUTES, WORKING_HOURS } from "@/lib/constants";
 
 export type CandidateSlot = { start: Date; end: Date; busyCheckEnd: Date };
 
-const businessDateParts = (date: Date) => {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: BUSINESS_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-
-  const parts = formatter.formatToParts(date);
-  const year = Number(parts.find((p) => p.type === "year")?.value ?? "0");
-  const month = Number(parts.find((p) => p.type === "month")?.value ?? "0");
-  const day = Number(parts.find((p) => p.type === "day")?.value ?? "0");
-  return { year, month, day };
-};
-
 const toUtcFromBusinessLocal = (dateIso: string, hm: string) => {
   const [hour, minute] = hm.split(":").map(Number);
-  const base = parse(dateIso, "yyyy-MM-dd", new Date());
-  const { year, month, day } = businessDateParts(base);
+  // Parse date components directly from the ISO string to avoid timezone
+  // shifting.  Previously, parse() produced midnight UTC which
+  // businessDateParts() converted to the prior day in America/Chicago.
+  const [year, month, day] = dateIso.split("-").map(Number);
 
   const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
   const rendered = new Intl.DateTimeFormat("en-US", {
@@ -46,11 +33,11 @@ const toUtcFromBusinessLocal = (dateIso: string, hm: string) => {
 };
 
 export const getDayWindow = (dateIso: string) => {
-  const date = parse(dateIso, "yyyy-MM-dd", new Date());
+  const [year, month, day] = dateIso.split("-").map(Number);
   const weekdayLabel = new Intl.DateTimeFormat("en-US", {
     timeZone: BUSINESS_TIMEZONE,
     weekday: "short"
-  }).format(new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)));
+  }).format(new Date(Date.UTC(year, month - 1, day, 12, 0, 0)));
 
   const weekdayMap: Record<string, number> = {
     Sun: 0,
