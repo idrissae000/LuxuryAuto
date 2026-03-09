@@ -47,7 +47,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
     if (!isOpen) return;
 
     (async () => {
-      const res = await fetch("/api/catalog");
+      const res = await fetch("/api/catalog/");
       if (!res.ok) return;
       const json = await res.json();
       if (Array.isArray(json.services) && json.services.length > 0) {
@@ -87,7 +87,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
     const load = async () => {
       setLoadingSlots(true);
       setError(null);
-      const res = await fetch("/api/availability", {
+      const res = await fetch("/api/availability/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date, serviceId: selectedService.id, serviceName: selectedService.name }),
@@ -131,7 +131,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
     setSubmitting(true);
     setError(null);
 
-    const res = await fetch("/api/bookings", {
+    const res = await fetch("/api/bookings/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -147,7 +147,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
       })
     });
 
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       if (res.status === 409) {
         setStartTime("");
