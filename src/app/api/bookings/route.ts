@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { addMinutes } from "date-fns";
 import { z } from "zod";
 import { defaultServices } from "@/lib/data";
-import { TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
+import { BUSINESS_TIMEZONE, TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
 import { sendBookingEmails } from "@/lib/email";
 import { intersects } from "@/lib/utils";
 import { generateCandidateSlots } from "@/lib/scheduling";
@@ -26,6 +26,20 @@ const resolveService = (serviceId?: string, serviceName?: string) => {
   return byId ?? byName ?? defaultServices[0];
 };
 
+const toBusinessDateIso = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return `${year}-${month}-${day}`;
+};
+
 export async function POST(request: Request) {
   try {
     if (!isGoogleCalendarConfigured()) {
@@ -44,23 +58,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Please choose a future appointment time." }, { status: 400 });
     }
 
-    if (!start.toISOString().startsWith(payload.date)) {
+    const candidateSlots = generateCandidateSlots(payload.date, durationMinutes);
+    const selectedSlot = candidateSlots.find((slot) => slot.start.toISOString() === start.toISOString());
+
+    const businessDateForStart = toBusinessDateIso(start);
+    if (businessDateForStart !== payload.date || !selectedSlot) {
       return NextResponse.json({ error: "Selected date/time mismatch. Please pick your date again." }, { status: 400 });
     }
 
-    const validSlot = generateCandidateSlots(payload.date, durationMinutes).some(
-      (slot) => slot.start.toISOString() === start.toISOString()
-    );
-
-    if (!validSlot) {
-      return NextResponse.json({ error: "Selected time is outside business hours." }, { status: 400 });
-    }
-
-    const end = addMinutes(start, durationMinutes);
+    const normalizedStart = new Date(selectedSlot.start);
+    const end = addMinutes(normalizedStart, durationMinutes);
     const busyCheckEnd = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
-    const busy = await getBusyWindowsFromGoogle(start.toISOString(), busyCheckEnd.toISOString());
-    const conflicts = intersects({ start, busyCheckEnd }, busy);
+    const busy = await getBusyWindowsFromGoogle(normalizedStart.toISOString(), busyCheckEnd.toISOString());
+    const conflicts = intersects({ start: normalizedStart, busyCheckEnd }, busy);
 
     if (conflicts) {
       return NextResponse.json(
@@ -70,7 +81,7 @@ export async function POST(request: Request) {
     }
 
     const googleEventId = await createGoogleBookingEvent({
-      start: start.toISOString(),
+      start: normalizedStart.toISOString(),
       end: end.toISOString(),
       service: service.name,
       customerName: payload.name,
@@ -85,7 +96,7 @@ export async function POST(request: Request) {
       customerEmail: payload.email || `${payload.phone}@no-email.local`,
       customerName: payload.name,
       service: service.name,
-      dateTime: start.toLocaleString("en-US")
+      dateTime: normalizedStart.toLocaleString("en-US")
     });
 
     return NextResponse.json({ bookingId: googleEventId ?? crypto.randomUUID() });
