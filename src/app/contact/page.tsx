@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { faqs } from "@/lib/data";
+import { BUSINESS_PHONE, BUSINESS_PHONE_TEL, BUSINESS_EMAIL, BUSINESS_INSTAGRAM, BUSINESS_INSTAGRAM_URL } from "@/lib/constants";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
@@ -26,9 +27,10 @@ export default function ContactPage() {
           <h1 className="text-4xl font-bold">Contact</h1>
           <p className="mt-4 text-white/70">Call, text, or send us a message for mobile detailing in Houston and Cypress.</p>
           <div className="mt-6 space-y-2 text-white/80">
-            <a className="block" href="tel:+18325550113">📞 (832) 555-0113</a>
-            <a className="block" href="mailto:hello@luxuryautodetailz.com">✉️ hello@luxuryautodetailz.com</a>
-            <p>Hours: Mon–Sat 9:00 AM – 6:00 PM</p>
+            <a className="block transition-colors hover:text-white" href={`tel:${BUSINESS_PHONE_TEL}`}>{BUSINESS_PHONE}</a>
+            <a className="block transition-colors hover:text-white" href={`mailto:${BUSINESS_EMAIL}`}>{BUSINESS_EMAIL}</a>
+            <a className="block transition-colors hover:text-white" href={BUSINESS_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">{BUSINESS_INSTAGRAM}</a>
+            <p>Hours: Mon–Fri 3:00 PM – 8:00 PM &bull; Sat–Sun 9:00 AM – 5:00 PM</p>
             <p>Service Area: Cypress, Houston, Jersey Village, Tomball, Katy</p>
           </div>
         </div>
@@ -36,7 +38,7 @@ export default function ContactPage() {
           <input name="name" required placeholder="Name" className="w-full rounded-lg border border-white/20 bg-black px-3 py-2" />
           <input name="email" required placeholder="Email" type="email" className="w-full rounded-lg border border-white/20 bg-black px-3 py-2" />
           <textarea name="message" required placeholder="How can we help?" className="w-full rounded-lg border border-white/20 bg-black px-3 py-2" />
-          <button className="rounded-lg bg-brand-blue px-4 py-2 font-semibold">Send</button>
+          <button className="btn-primary rounded-lg px-4 py-2 font-semibold">Send</button>
           {sent && <p className="text-sm text-brand-blue">Message sent.</p>}
           <p className="text-xs text-white/60">
             By contacting us you agree to our <Link href="/terms" className="text-brand-blue">Terms of Service</Link>.

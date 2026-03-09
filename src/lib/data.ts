@@ -6,21 +6,21 @@ export const defaultServices: Service[] = [
     name: "Interior Detail",
     description: "Deep interior refresh: seats, carpets, dash, door panels, vents, and trim.",
     base_price_cents: 4500,
-    duration_minutes: 90
+    duration_minutes: 60
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Exterior Detail",
     description: "Foam wash, hand decon, wheel/tire treatment, and premium exterior finish.",
     base_price_cents: 4000,
-    duration_minutes: 90
+    duration_minutes: 60
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Full Detail",
     description: "Complete interior + exterior service for a full vehicle reset.",
     base_price_cents: 7500,
-    duration_minutes: 180
+    duration_minutes: 120
   }
 ];
 
@@ -29,7 +29,7 @@ export const defaultAddons: Addon[] = [];
 export const faqs = [
   {
     q: "How long does a detail take?",
-    a: "Interior and exterior details are typically 90 minutes, while full details are typically 180 minutes."
+    a: "Interior and exterior details are typically 60 minutes, while full details are typically 120 minutes."
   },
   {
     q: "Do you service all of Texas?",

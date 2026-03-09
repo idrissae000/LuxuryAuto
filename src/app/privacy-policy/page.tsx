@@ -50,8 +50,8 @@ export default function PrivacyPolicyPage() {
         <h2 className="text-xl font-semibold text-white">Contact Us</h2>
         <p>
           If you have any questions about this Privacy Policy, please contact us at{" "}
-          <a href="mailto:hello@luxuryautodetailz.com" className="text-brand-blue hover:underline">
-            hello@luxuryautodetailz.com
+          <a href="mailto:luxuryautodetailz@gmail.com" className="text-brand-blue hover:underline">
+            luxuryautodetailz@gmail.com
           </a>
           .
         </p>

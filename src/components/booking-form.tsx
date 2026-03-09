@@ -292,7 +292,7 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
           <button
             onClick={submitBooking}
             disabled={submitting || !canSubmit}
-            className="w-full rounded-xl bg-brand-blue px-4 py-3 font-semibold shadow-glow transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary w-full rounded-xl px-4 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Booking..." : "Confirm appointment"}
           </button>
