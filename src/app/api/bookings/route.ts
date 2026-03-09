@@ -6,6 +6,7 @@ import { TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constant
 import { sendBookingEmails } from "@/lib/email";
 import { intersects } from "@/lib/utils";
 import { createGoogleBookingEvent, getBusyWindowsFromGoogle, isGoogleCalendarConfigured } from "@/lib/google-calendar";
+import { sendBookingConfirmationSms } from "@/lib/sms";
 
 const schema = z.object({
   serviceId: z.string().uuid().optional(),
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
       service: service.name,
       dateTime: normalizedStart.toLocaleString("en-US")
     });
+
+    // Fire-and-forget SMS — never blocks the booking response
+    sendBookingConfirmationSms(payload.phone, normalizedStart).catch(() => {});
 
     return NextResponse.json({ bookingId: googleEventId ?? crypto.randomUUID() });
   } catch (error) {
