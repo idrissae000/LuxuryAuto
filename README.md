@@ -1,0 +1,217 @@
+# Luxury Auto Detailz
+
+Production-ready Next.js + Supabase + Google Calendar web app for a mobile detailing business in Cypress/Houston, Texas.
+
+## Features
+- Marketing pages: Home, Pricing, Gallery, Contact
+- Custom 5-step booking flow at `/book`
+- Live availability from Google Calendar (`freeBusy.query`)
+- Booking creation with race-condition re-check and event insertion (`events.insert`)
+- Supabase-backed admin dashboard with auth-protected `/admin` routes
+- Optional email notifications via Resend
+- Tailwind premium dark UI and sticky Book Now CTA
+
+## Tech Stack
+- Next.js App Router + TypeScript + TailwindCSS
+- Supabase (Postgres + Auth + RLS)
+- Google Calendar API (service account)
+- Resend (optional)
+
+## Local Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Copy env template:
+   ```bash
+   cp .env.example .env.local
+   ```
+3. Fill required env vars (see `.env.example`).
+4. Run migration in Supabase SQL editor: `supabase/migrations/202506060001_init.sql`.
+5. Create your first Supabase Auth admin user and capture the UUID.
+6. Seed service/add-on catalog for that owner:
+   ```sql
+   select public.seed_default_catalog('<ADMIN_USER_UUID>'::uuid);
+   ```
+7. (Optional for admin data) Set `DEFAULT_OWNER_ID` in env to the same admin UUID.
+8. Run app:
+   ```bash
+   npm run dev
+   ```
+
+## Google Calendar Service Account Setup
+1. Create a new Google Cloud project.
+2. Enable **Google Calendar API**.
+3. Create a **Service Account** and generate a JSON key.
+4. Share your target Google Calendar with the service-account email and grant **Make changes to events**.
+5. Set these environment variables in local + Vercel and redeploy:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (preserve newline escapes)
+   - Fallback supported: `GOOGLE_PRIVATE_KEY`
+   - `GOOGLE_CALENDAR_ID`
+
+> The app can run **before** Google Calendar is connected. In that mode, booking conflict checks still use your Supabase `bookings` table so you can test end-to-end flows. Once Google vars are added, Google free/busy + event creation are used automatically.
+
+## Supabase & Security
+- All business tables have RLS enabled.
+- CRUD policies enforce `owner_id = auth.uid()`.
+- Public visitors never write directly to Supabase; booking uses server API route at `/api/bookings` with service role key.
+- Admin auth uses Supabase SSR cookies + middleware on `/admin/*`.
+
+## Admin Access
+- `/admin/login` signs in with Supabase Auth email/password.
+- `/admin/dashboard` shows bookings + summary stats.
+- `/admin/customers` shows customers and booking history counts.
+- `/admin/bookings/[id]` shows booking details including internal fields.
+
+## Pre‑Vercel Deployment Debug Checklist (Must Pass)
+1. **Environment vars configured in Vercel**
+   - Required for website booking + availability: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (or `GOOGLE_PRIVATE_KEY`), `GOOGLE_CALENDAR_ID`, `BOOKING_TZ`.
+   - Optional/legacy for admin/Supabase features: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEFAULT_OWNER_ID`.
+   - Optional: `RESEND_API_KEY`, `OWNER_NOTIFICATION_EMAIL`.
+2. **Supabase migration applied** and `seed_default_catalog()` executed with the real owner UUID.
+3. **Google Calendar shared correctly** with service account email and edit permission.
+4. **Admin login test**
+   - Login at `/admin/login`
+   - Confirm navigation to `/admin/dashboard` succeeds without redirect loops.
+5. **Booking availability test**
+   - `/book` should return slots only inside Mon–Sat 9:00–18:00 (America/Chicago).
+   - Sundays should return no slots.
+6. **No-overlap test**
+   - Book one slot.
+   - Try booking overlapping slot; API should return: `That time was just booked—please choose another slot.`
+7. **Google event test** (after calendar credentials are connected)
+   - Confirm inserted event title format: `Luxury Auto Detailz — {Service} ({Vehicle Size})`.
+   - Confirm description includes customer details, address, add-ons, notes, estimated total.
+8. **Production build check**
+   ```bash
+   npm run build
+   ```
+9. **Post-deploy smoke tests**
+   - Home/pricing/gallery/contact render
+   - Booking submission creates Supabase row + Google event
+   - Admin dashboard sees booking data
+
+
+## If Vercel Fails With Type Errors (Step-by-Step)
+1. Pull the latest code that includes the busy-window typing fix.
+2. In Vercel, open **Project → Settings → Environment Variables**.
+3. Add/update required vars:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `DEFAULT_OWNER_ID` (optional for admin/Supabase features)
+4. For Google-driven booking, add Google vars before testing availability.
+5. Ensure Supabase migration was run and catalog seeded:
+   ```sql
+   select public.seed_default_catalog('<ADMIN_USER_UUID>'::uuid);
+   ```
+6. In Vercel, click **Deployments → Redeploy** (or push a new commit).
+7. After deploy, test:
+   - `/book` loads services and slots
+   - booking submit creates a DB row
+   - `/admin/dashboard` shows the booking
+8. When ready to enable Google sync, add:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (or `GOOGLE_PRIVATE_KEY`)
+   - `GOOGLE_CALENDAR_ID`
+   then redeploy and verify event creation.
+
+
+
+## If You Hit Merge Conflicts On GitHub PR
+If the conflict header shows `<<<<<<< codex/... (Current change)`, use **Accept current change** for these files to keep the build fix:
+- `src/app/api/availability/route.ts`
+- `src/lib/booking-conflicts.ts`
+- `src/lib/google-calendar.ts`
+- `src/lib/utils.ts`
+- `README.md`
+Then click **Mark as resolved** for each file and finish with **Commit merge**.
+
+## Vercel Build & Output Settings
+Use these exact settings:
+- **Framework Preset:** Next.js
+- **Build Command:** `npm run build`
+- **Install Command:** `npm install` (or `npm ci` if you commit lockfile)
+- **Output Directory:** leave empty / default (do **not** set `out`)
+- **Node.js Version:** 20.x
+
+If you changed Output Directory to `out`, remove it. This app uses server routes (`/api/*`) and SSR admin pages, so static export output is not compatible.
+
+## Common Deployment Mistakes to Avoid
+- Using a placeholder/incorrect `DEFAULT_OWNER_ID` (affects Supabase-backed catalog/admin views).
+- Forgetting to run `seed_default_catalog` for the real owner.
+- Private key formatting issues (`GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` / `GOOGLE_PRIVATE_KEY` must keep escaped newlines).
+- Not sharing the calendar with service account write permissions.
+- Missing SSR middleware causing admin auth session mismatch.
+
+## Scripts
+- `npm run dev`
+- `npm run build`
+- `npm run lint`
+- `npm run typecheck`
+
+
+## Legal
+- Public terms page available at `/terms`.
+
+
+## Add Your Logo & Photos (No Code Needed)
+1. Save your official logo image as **`public/logo.png`** (exact filename).
+2. Add your detailing photos to **`public/gallery/`** (supported: `.jpg`, `.jpeg`, `.png`, `.webp`).
+3. Restart/redeploy and your photos/logo will render automatically.
+
+Notes:
+- The app already prefers `logo.png` and falls back to `logo.svg` if `logo.png` is missing.
+- Gallery files are auto-detected from `public/gallery/`; if none exist, fallback placeholders are shown.
+
+Troubleshooting logo not showing:
+- Open `http://localhost:3000/logo.png` directly. If it does not load, the file may be invalid or not actually PNG.
+- Re-export the logo as a real PNG and overwrite `public/logo.png`.
+- Hard refresh browser (`Ctrl+Shift+R`) after replacing the file.
+
+
+## Vercel Error: Conflicting app and pages files
+If Vercel reports conflicts like:
+- `pages/api/availability.js` vs `app/api/availability/route.ts`
+- `pages/book.js` vs `app/book/page.tsx`
+
+Do this:
+1. Ensure your Vercel **Root Directory** points to this repo root (`LuxuryAuto`) and not a parent folder.
+2. Remove legacy files from your branch/repo if they exist:
+   - `pages/book.js`
+   - `pages/api/availability.js`
+3. Redeploy.
+
+This repo also runs a prebuild cleanup script (`scripts/resolve-router-conflicts.mjs`) to remove those legacy files if they accidentally exist during build.
+
+
+## Security Upgrade Note (Next.js)
+If Vercel reports a vulnerable Next.js version:
+1. Pull latest changes.
+2. Run `npm install` locally to update dependencies from `package.json`.
+3. Commit and push lockfile updates (if your repo uses a lockfile).
+4. Redeploy.
+
+
+## Vercel Error: Cannot find module ../../app/.../page.js
+If build fails with:
+`Cannot find module '../../app/admin/bookings/[id]/page.js'`
+
+This is usually caused by stale generated route typings in `.next/types` or over-broad TypeScript includes.
+
+Fixes already in this repo:
+- `prebuild` clears `.next/types`.
+- `prebuild` clears stale `.next/types` before `next build`, preventing stale route type references.
+
+
+## Google-Driven Booking Flow
+- Availability now comes from Google Calendar busy windows (not Supabase booking rows).
+- Booking confirmation re-checks Google availability and creates a Google Calendar event directly.
+- Business rules used by the website booking flow:
+  - Interior Detail: 90 minutes
+  - Exterior Detail: 90 minutes
+  - Full Detail: 180 minutes
+  - Buffer between appointments: 15 minutes
+  - Hours: 9:00 AM–6:00 PM
+  - Time zone: `BOOKING_TZ` (default `America/Chicago`)
