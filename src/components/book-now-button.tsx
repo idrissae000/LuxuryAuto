@@ -1,27 +1,15 @@
-"use client";
-
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type BookNowButtonProps = {
   className?: string;
   children: ReactNode;
-  serviceId?: string;
 };
 
-export function BookNowButton({ className, children, serviceId }: BookNowButtonProps) {
+export function BookNowButton({ className, children }: BookNowButtonProps) {
   return (
-    <button
-      type="button"
-      onClick={() =>
-        window.dispatchEvent(
-          new CustomEvent("open-booking-modal", {
-            detail: { serviceId }
-          })
-        )
-      }
-      className={className}
-    >
+    <Link href="/pricing" className={className}>
       {children}
-    </button>
+    </Link>
   );
 }

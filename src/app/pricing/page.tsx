@@ -1,4 +1,4 @@
-import { BookNowButton } from "@/components/book-now-button";
+import Link from "next/link";
 import { defaultAddons, defaultServices } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
@@ -20,7 +20,12 @@ export default function PricingPage() {
             <p className="mt-3 text-brand-blue">{service.duration_minutes} min</p>
             <p className="mt-1 text-2xl font-semibold">{formatCurrency(service.base_price_cents)}</p>
             <p className="mt-4 text-sm text-white/70">Booking is completed directly on this website.</p>
-            <BookNowButton serviceId={service.id} className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold">Book</BookNowButton>
+            <Link
+              href={`/book?serviceId=${service.id}`}
+              className="mt-6 rounded-full bg-brand-blue px-4 py-2 text-center font-semibold"
+            >
+              Book
+            </Link>
           </article>
         ))}
       </div>

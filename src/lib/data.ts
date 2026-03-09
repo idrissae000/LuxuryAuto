@@ -5,21 +5,21 @@ export const defaultServices: Service[] = [
     id: "11111111-1111-1111-1111-111111111111",
     name: "Interior Detail",
     description: "Deep interior refresh: seats, carpets, dash, door panels, vents, and trim.",
-    base_price_cents: 17500,
+    base_price_cents: 4500,
     duration_minutes: 90
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Exterior Detail",
     description: "Foam wash, hand decon, wheel/tire treatment, and premium exterior finish.",
-    base_price_cents: 15500,
+    base_price_cents: 4000,
     duration_minutes: 90
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Full Detail",
     description: "Complete interior + exterior service for a full vehicle reset.",
-    base_price_cents: 28500,
+    base_price_cents: 7500,
     duration_minutes: 180
   }
 ];

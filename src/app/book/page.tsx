@@ -1,21 +1,15 @@
-"use client";
+import { BookPageClient } from "@/components/book-page-client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { BookingForm } from "@/components/booking-form";
+type BookPageProps = {
+  searchParams?: Promise<{ serviceId?: string }>;
+};
 
-export default function BookPage() {
-  const router = useRouter();
-  const [open, setOpen] = useState(true);
-
-  const closeModal = () => {
-    setOpen(false);
-    router.push("/");
-  };
+export default async function BookPage({ searchParams }: BookPageProps) {
+  const params = await searchParams;
 
   return (
     <section className="section-shell">
-      <BookingForm isOpen={open} onClose={closeModal} />
+      <BookPageClient selectedServiceId={params?.serviceId} />
     </section>
   );
 }
