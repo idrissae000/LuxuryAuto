@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { addMinutes } from "date-fns";
 import { z } from "zod";
 import { defaultServices } from "@/lib/data";
-import { BUSINESS_TIMEZONE, TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
+import { TRAVEL_BUFFER_MINUTES, getServiceDurationMinutes } from "@/lib/constants";
 import { sendBookingEmails } from "@/lib/email";
 import { intersects } from "@/lib/utils";
-import { generateCandidateSlots } from "@/lib/scheduling";
 import { createGoogleBookingEvent, getBusyWindowsFromGoogle, isGoogleCalendarConfigured } from "@/lib/google-calendar";
 
 const schema = z.object({
@@ -26,19 +25,6 @@ const resolveService = (serviceId?: string, serviceName?: string) => {
   return byId ?? byName ?? defaultServices[0];
 };
 
-const toBusinessDateIso = (date: Date) => {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: BUSINESS_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-  return `${year}-${month}-${day}`;
-};
 
 export async function POST(request: Request) {
   try {
@@ -58,15 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Please choose a future appointment time." }, { status: 400 });
     }
 
-    const candidateSlots = generateCandidateSlots(payload.date, durationMinutes);
-    const selectedSlot = candidateSlots.find((slot) => slot.start.toISOString() === start.toISOString());
-
-    const businessDateForStart = toBusinessDateIso(start);
-    if (businessDateForStart !== payload.date || !selectedSlot) {
-      return NextResponse.json({ error: "Selected date/time mismatch. Please pick your date again." }, { status: 400 });
-    }
-
-    const normalizedStart = new Date(selectedSlot.start);
+    const normalizedStart = new Date(start.toISOString());
     const end = addMinutes(normalizedStart, durationMinutes);
     const busyCheckEnd = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
