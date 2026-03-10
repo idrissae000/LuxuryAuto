@@ -1,3 +1,6 @@
+/* TEMPORARILY DISABLED — Gallery page removed for presentation.
+   Uncomment the code below to restore the gallery.
+
 import Image from "next/image";
 import { getGalleryImages } from "@/lib/gallery";
 
@@ -18,4 +21,12 @@ export default async function GalleryPage() {
       </div>
     </section>
   );
+}
+*/
+
+import { redirect } from "next/navigation";
+
+// Redirect to home while gallery is disabled
+export default function GalleryPage() {
+  redirect("/");
 }

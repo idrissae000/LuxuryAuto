@@ -9,7 +9,7 @@ import { LogoImage } from "@/components/logo-image";
 const links = [
   { href: "/", label: "Home" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/gallery", label: "Gallery" },
+  // { href: "/gallery", label: "Gallery" }, // TEMPORARILY DISABLED — Gallery section removed for presentation
   { href: "/contact", label: "Contact" }
 ];
 
