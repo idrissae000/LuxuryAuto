@@ -1,6 +1,17 @@
-import { CheckCircle, Calendar, Clock, MapPin, User, Sparkles, Phone } from "lucide-react";
+import { CheckCircle, Calendar, Clock, MapPin, User, Sparkles, Phone, Plus } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+
+const formatPriceDollars = (cents: number) =>
+  `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+
+function parseAddons(raw?: string): { name: string; price_cents: number }[] {
+  if (!raw) return [];
+  return raw.split(",").map((entry) => {
+    const [name, priceStr] = entry.split("|");
+    return { name: name || "", price_cents: Number(priceStr) || 0 };
+  }).filter((a) => a.name);
+}
 
 function formatTime(iso: string) {
   try {
@@ -30,9 +41,11 @@ export default async function BookingConfirmationPage({
     date?: string;
     time?: string;
     address?: string;
+    addons?: string;
   }>;
 }) {
   const params = await searchParams;
+  const addons = parseAddons(params.addons);
 
   const hasDetails = params.name && params.service && params.date && params.time;
 
@@ -98,6 +111,20 @@ export default async function BookingConfirmationPage({
                   <p className="text-lg">{params.address}</p>
                 </div>
               </div>
+
+              {addons.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Plus className="mt-0.5 h-5 w-5 shrink-0 text-brand-blue" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-white/40">Add-Ons</p>
+                    {addons.map((a, i) => (
+                      <p key={i} className="text-base text-white/80">
+                        {a.name} — {formatPriceDollars(a.price_cents)}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {params.id && (

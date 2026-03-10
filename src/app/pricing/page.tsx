@@ -3,8 +3,6 @@ import { defaultAddons, defaultServices } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
 export default function PricingPage() {
-  const addon = defaultAddons[0];
-
   return (
     <section className="section-shell space-y-12">
       <div>
@@ -30,19 +28,20 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <div className="card">
-        <h3 className="text-2xl font-semibold">Optional Add-on</h3>
-        {addon ? (
-          <>
-            <p className="mt-3 text-white/70">Most extras are already included in detailing packages. The only optional add-on is:</p>
-            <div className="mt-4 rounded-xl border border-white/10 p-4 text-white/80">
-              {addon.name} — {formatCurrency(addon.price_cents)}
-            </div>
-          </>
-        ) : (
-          <p className="mt-3 text-white/70">No add-ons are currently offered. All services are fully bundled.</p>
-        )}
-      </div>
+      {defaultAddons.length > 0 && (
+        <div className="card">
+          <h3 className="text-2xl font-semibold">Optional Add-Ons</h3>
+          <p className="mt-3 text-white/70">Enhance any service with these optional extras:</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {defaultAddons.map((addon) => (
+              <div key={addon.id} className="flex items-center justify-between rounded-xl border border-white/10 p-4 text-white/80">
+                <span>{addon.name}</span>
+                <span className="shrink-0 font-semibold text-brand-blue">{formatCurrency(addon.price_cents)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
