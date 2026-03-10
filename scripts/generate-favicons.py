@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Generate favicon files from logo.png by extracting the car icon."""
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
+import struct
+import io
 import os
 
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
 LOGO_PATH = os.path.join(PUBLIC_DIR, "logo.png")
 
+
 def extract_car_region(logo: Image.Image) -> Image.Image:
     """Extract the car portion from the logo (lower-center area, below the text)."""
     w, h = logo.size
-    # The car occupies roughly the lower 60% of the image, centered
-    # Looking at the logo: text is top ~40%, car is bottom ~60%
     crop_top = int(h * 0.42)
     crop_bottom = int(h * 0.92)
     crop_left = int(w * 0.05)
@@ -21,8 +22,33 @@ def extract_car_region(logo: Image.Image) -> Image.Image:
     return car
 
 
-def create_favicon(car_img: Image.Image, size: int) -> Image.Image:
-    """Create a square favicon with the car icon centered on a black background."""
+def round_corners(img: Image.Image, radius: int) -> Image.Image:
+    """Apply rounded corners to an RGBA image using an antialiased mask."""
+    # Work at 4x resolution for smooth antialiased corners
+    scale = 4
+    w, h = img.size
+    big_w, big_h = w * scale, h * scale
+    big_radius = radius * scale
+
+    # Create high-res rounded rectangle mask
+    mask = Image.new("L", (big_w, big_h), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle(
+        [(0, 0), (big_w - 1, big_h - 1)],
+        radius=big_radius,
+        fill=255,
+    )
+    # Downscale for antialiased edges
+    mask = mask.resize((w, h), Image.LANCZOS)
+
+    # Apply mask to alpha channel
+    result = img.copy()
+    result.putalpha(mask)
+    return result
+
+
+def create_favicon(car_img: Image.Image, size: int, corner_radius_pct: float = 0.18) -> Image.Image:
+    """Create a square favicon with the car icon centered on a black background with rounded corners."""
     # Create black square background
     favicon = Image.new("RGBA", (size, size), (0, 0, 0, 255))
 
@@ -48,17 +74,22 @@ def create_favicon(car_img: Image.Image, size: int) -> Image.Image:
     y = (size - new_h) // 2
 
     favicon.paste(resized, (x, y), resized if resized.mode == "RGBA" else None)
+
+    # Apply rounded corners
+    radius = max(1, int(size * corner_radius_pct))
+    favicon = round_corners(favicon, radius)
+
     return favicon
 
 
 def main():
     logo = Image.open(LOGO_PATH).convert("RGBA")
-    print(f"Logo size: {logo.size}")
+    print(f"Logo loaded: {LOGO_PATH} ({logo.size})")
 
     car = extract_car_region(logo)
     print(f"Extracted car region: {car.size}")
 
-    # Generate sizes
+    # Generate PNG sizes
     sizes = {
         "favicon-16x16.png": 16,
         "favicon-32x32.png": 32,
@@ -72,15 +103,12 @@ def main():
         print(f"Created {filename} ({size}x{size})")
 
     # Create favicon.ico with multiple sizes
-    import struct, io
-
     ico_sizes = [16, 32, 48]
     ico_images = [create_favicon(car, s).convert("RGBA") for s in ico_sizes]
 
-    # Build ICO file manually for reliable multi-size support
     ico_path = os.path.join(PUBLIC_DIR, "favicon.ico")
 
-    # Convert each image to PNG bytes
+    # Build ICO file manually for reliable multi-size support
     png_data_list = []
     for img in ico_images:
         buf = io.BytesIO()
@@ -88,8 +116,6 @@ def main():
         png_data_list.append(buf.getvalue())
 
     num_images = len(ico_images)
-    # ICO header: 6 bytes
-    # Each directory entry: 16 bytes
     header_size = 6 + 16 * num_images
     offset = header_size
 
@@ -97,20 +123,19 @@ def main():
         # ICONDIR header
         f.write(struct.pack("<HHH", 0, 1, num_images))
 
-        # Write directory entries
-        for i, (img, data) in enumerate(zip(ico_images, png_data_list)):
+        # Directory entries
+        for img, data in zip(ico_images, png_data_list):
             w, h = img.size
-            # Width/height: 0 means 256
             bw = 0 if w >= 256 else w
             bh = 0 if h >= 256 else h
             f.write(struct.pack("<BBBBHHII", bw, bh, 0, 0, 1, 32, len(data), offset))
             offset += len(data)
 
-        # Write image data
+        # Image data
         for data in png_data_list:
             f.write(data)
 
-    print(f"Created favicon.ico (16, 32, 48)")
+    print(f"Created favicon.ico ({', '.join(str(s) for s in ico_sizes)})")
 
 
 if __name__ == "__main__":
