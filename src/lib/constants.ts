@@ -1,7 +1,7 @@
 export const BUSINESS_NAME = "Luxury Auto Detailz";
 export const BUSINESS_PHONE = "281-716-7524";
 export const BUSINESS_PHONE_TEL = "+12817167524";
-export const BUSINESS_EMAIL = "luxuryautodetailz@gmail.com";
+export const BUSINESS_EMAIL = "tahaehab1977@gmail.com";
 export const BUSINESS_INSTAGRAM = "@luxury_auto_detailz3";
 export const BUSINESS_INSTAGRAM_URL = "https://www.instagram.com/luxury_auto_detailz3/";
 export const BUSINESS_TIMEZONE = process.env.BOOKING_TZ ?? process.env.BUSINESS_TIMEZONE ?? "America/Chicago";
