@@ -8,6 +8,12 @@ import { intersects } from "@/lib/utils";
 import { createGoogleBookingEvent, getBusyWindowsFromGoogle, isGoogleCalendarConfigured } from "@/lib/google-calendar";
 import { sendBookingConfirmationSms } from "@/lib/sms";
 
+const addonSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  price_cents: z.number()
+});
+
 const schema = z.object({
   serviceId: z.string().uuid().optional(),
   serviceName: z.string().optional(),
@@ -17,7 +23,8 @@ const schema = z.object({
   phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
   address: z.string().min(5),
   email: z.string().email().optional().or(z.literal("")),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  addons: z.array(addonSchema).optional()
 });
 
 const resolveService = (serviceId?: string, serviceName?: string) => {
@@ -63,11 +70,13 @@ export async function POST(request: Request) {
       start: normalizedStart.toISOString(),
       end: end.toISOString(),
       service: service.name,
+      basePrice: service.base_price_cents,
       customerName: payload.name,
       phone: payload.phone,
       address: payload.address,
       email: payload.email || undefined,
-      notes: payload.notes
+      notes: payload.notes,
+      addons: payload.addons
     });
 
     await sendBookingEmails({

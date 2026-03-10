@@ -74,15 +74,20 @@ export const getBusyWindowsFromGoogle = async (timeMin: string, timeMax: string)
   });
 };
 
+const formatPriceDollars = (cents: number) =>
+  `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+
 export const createGoogleBookingEvent = async (payload: {
   start: string;
   end: string;
   service: string;
+  basePrice: number;
   customerName: string;
   phone: string;
   address: string;
   email?: string;
   notes?: string;
+  addons?: { id: string; name: string; price_cents: number }[];
 }) => {
   const calendarId = getCalendarId();
   const calendar = getCalendarClient();
@@ -90,20 +95,37 @@ export const createGoogleBookingEvent = async (payload: {
     throw new Error("Google Calendar is not configured. Add service account env vars and calendar ID.");
   }
 
+  const descriptionLines: string[] = [];
+
+  // Add-ons section at the top
+  if (payload.addons && payload.addons.length > 0) {
+    descriptionLines.push("Add-Ons:");
+    for (const addon of payload.addons) {
+      descriptionLines.push(`- ${addon.name} — ${formatPriceDollars(addon.price_cents)}`);
+    }
+    descriptionLines.push("");
+  } else {
+    descriptionLines.push("Add-Ons: None");
+    descriptionLines.push("");
+  }
+
+  descriptionLines.push(
+    `Name: ${payload.customerName}`,
+    `Phone: ${payload.phone}`,
+    `Email: ${payload.email || "Not provided"}`,
+    `Address: ${payload.address}`,
+    `Service: ${payload.service}`,
+    `Base Price: ${formatPriceDollars(payload.basePrice)}`,
+    `Notes: ${payload.notes || "N/A"}`
+  );
+
   let response;
   try {
     response = await calendar.events.insert({
       calendarId,
       requestBody: {
         summary: `${payload.service} — ${payload.customerName}`,
-        description: [
-          `Name: ${payload.customerName}`,
-          `Phone: ${payload.phone}`,
-          `Email: ${payload.email || "Not provided"}`,
-          `Address: ${payload.address}`,
-          `Service: ${payload.service}`,
-          `Notes: ${payload.notes || "N/A"}`
-        ].join("\n"),
+        description: descriptionLines.join("\n"),
         start: { dateTime: payload.start, timeZone: BUSINESS_TIMEZONE },
         end: { dateTime: payload.end, timeZone: BUSINESS_TIMEZONE }
       }

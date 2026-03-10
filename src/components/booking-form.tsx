@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { defaultServices } from "@/lib/data";
+import { defaultServices, defaultAddons } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
-import { Service } from "@/lib/types";
+import { Addon, Service } from "@/lib/types";
 import { getServiceDurationMinutes } from "@/lib/constants";
 import { LogoImage } from "@/components/logo-image";
 
@@ -20,6 +20,8 @@ type BookingFormProps = {
 export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormProps) {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>(defaultServices);
+  const [addons, setAddons] = useState<Addon[]>(defaultAddons);
+  const [selectedAddonIds, setSelectedAddonIds] = useState<Set<string>>(new Set());
   const [serviceId, setServiceId] = useState(defaultServices[0].id);
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -62,6 +64,9 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
           return json.services[0].id;
         });
       }
+      if (Array.isArray(json.addons) && json.addons.length > 0) {
+        setAddons(json.addons);
+      }
     })();
   }, [isOpen, selectedServiceId]);
 
@@ -74,6 +79,19 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
   const serviceDuration = selectedService
     ? getServiceDurationMinutes(selectedService.name, selectedService.duration_minutes)
     : 90;
+
+  const toggleAddon = (id: string) => {
+    setSelectedAddonIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedAddons = addons.filter((a) => selectedAddonIds.has(a.id));
+  const addonsTotalCents = selectedAddons.reduce((sum, a) => sum + a.price_cents, 0);
+  const totalCents = (selectedService?.base_price_cents ?? 0) + addonsTotalCents;
 
   useEffect(() => {
     if (!date || !selectedService || !isOpen) {
@@ -161,7 +179,8 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
         phone: normalizedPhone,
         email: details.email.trim(),
         address: details.address.trim(),
-        notes: details.notes.trim()
+        notes: details.notes.trim(),
+        addons: selectedAddons.map((a) => ({ id: a.id, name: a.name, price_cents: a.price_cents }))
       })
     });
 
@@ -187,6 +206,9 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
       time: startTime,
       address: details.address.trim(),
     });
+    if (selectedAddons.length > 0) {
+      confirmParams.set("addons", selectedAddons.map((a) => `${a.name}|${a.price_cents}`).join(","));
+    }
     router.push(`/book/confirmation?${confirmParams.toString()}`);
   };
 
@@ -227,6 +249,42 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
               ))}
             </select>
           </label>
+
+          {addons.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-white/80">Add-Ons <span className="text-white/50">(optional)</span></p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {addons.map((addon) => (
+                  <label
+                    key={addon.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
+                      selectedAddonIds.has(addon.id)
+                        ? "border-brand-blue bg-brand-blue/10 shadow-glow"
+                        : "border-white/20 bg-black/50 hover:border-white/40"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedAddonIds.has(addon.id)}
+                      onChange={() => toggleAddon(addon.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${
+                        selectedAddonIds.has(addon.id)
+                          ? "border-brand-blue bg-brand-blue text-white"
+                          : "border-white/30 bg-black/40"
+                      }`}
+                    >
+                      {selectedAddonIds.has(addon.id) && "✓"}
+                    </span>
+                    <span className="flex-1">{addon.name}</span>
+                    <span className="shrink-0 text-white/60">{formatCurrency(addon.price_cents)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <label className="space-y-2 text-sm text-white/80">
             Appointment date
@@ -309,9 +367,25 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
             className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
           />
 
-          <div className="flex items-center justify-between text-sm text-white/70">
-            <span>{serviceDuration} minute service</span>
-            <span>From {selectedService ? formatCurrency(selectedService.base_price_cents) : "—"}</span>
+          <div className="space-y-1 text-sm text-white/70">
+            <div className="flex items-center justify-between">
+              <span>{serviceDuration} minute service</span>
+              <span>{selectedService ? formatCurrency(selectedService.base_price_cents) : "—"}</span>
+            </div>
+            {selectedAddons.length > 0 && (
+              <>
+                {selectedAddons.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between text-white/50">
+                    <span>{a.name}</span>
+                    <span>{formatCurrency(a.price_cents)}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t border-white/10 pt-1 font-semibold text-white/90">
+                  <span>Total</span>
+                  <span>{formatCurrency(totalCents)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
