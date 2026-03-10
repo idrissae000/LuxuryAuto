@@ -30,7 +30,7 @@ export default function ContactPage() {
             <a className="block transition-colors hover:text-white" href={`tel:${BUSINESS_PHONE_TEL}`}>{BUSINESS_PHONE}</a>
             <a className="block transition-colors hover:text-white" href={`mailto:${BUSINESS_EMAIL}`}>{BUSINESS_EMAIL}</a>
             <a className="block transition-colors hover:text-white" href={BUSINESS_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">{BUSINESS_INSTAGRAM}</a>
-            <p>Hours: Mon–Fri 3:00 PM – 8:00 PM &bull; Sat–Sun 7:00 AM – 5:00 PM</p>
+            <p>Hours: Mon–Fri 3:00 PM – 8:00 PM &bull; Sat–Sun 7:00 AM – 5:00 PM (last booking starts at close)</p>
             <p>Service Area: Cypress, Houston, Jersey Village, Tomball, Katy</p>
           </div>
         </div>

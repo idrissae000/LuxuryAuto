@@ -65,7 +65,9 @@ export const generateCandidateSlots = (dateIso: string, durationMinutes: number)
   const slots: CandidateSlot[] = [];
   let cursor = new Date(window.start);
 
-  while (isBefore(addMinutes(cursor, durationMinutes + TRAVEL_BUFFER_MINUTES), addMinutes(window.end, 1))) {
+  // The closing time is the latest allowed START time (not END time).
+  // Services may extend past the closing time.
+  while (isBefore(cursor, addMinutes(window.end, 1))) {
     const end = addMinutes(cursor, durationMinutes);
     slots.push({ start: new Date(cursor), end, busyCheckEnd: addMinutes(end, TRAVEL_BUFFER_MINUTES) });
     cursor = addMinutes(cursor, SLOT_INTERVAL_MINUTES);
