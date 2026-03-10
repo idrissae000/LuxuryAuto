@@ -9,13 +9,13 @@ export const SLOT_INTERVAL_MINUTES = Number(process.env.SLOT_INTERVAL_MINUTES ??
 export const TRAVEL_BUFFER_MINUTES = Number(process.env.TRAVEL_BUFFER_MINUTES ?? 15);
 
 export const WORKING_HOURS: Record<number, { start: string; end: string } | null> = {
-  0: { start: "09:00", end: "17:00" },
+  0: { start: "07:00", end: "17:00" },
   1: { start: "15:00", end: "20:00" },
   2: { start: "15:00", end: "20:00" },
   3: { start: "15:00", end: "20:00" },
   4: { start: "15:00", end: "20:00" },
   5: { start: "15:00", end: "20:00" },
-  6: { start: "09:00", end: "17:00" }
+  6: { start: "07:00", end: "17:00" }
 };
 
 const SERVICE_DURATION_OVERRIDES: Record<string, number> = {
