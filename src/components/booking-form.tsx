@@ -386,6 +386,9 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
                 </div>
               </>
             )}
+            <p className="mt-2 text-xs text-white/50">
+              Payment is collected after the service is completed.
+            </p>
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
