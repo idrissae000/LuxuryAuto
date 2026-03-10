@@ -1,13 +1,13 @@
-import Image from "next/image";
+// import Image from "next/image"; // TEMPORARILY DISABLED — used by Before & After section
 import Link from "next/link";
 import { BookNowButton } from "@/components/book-now-button";
 import { LogoImage } from "@/components/logo-image";
 import { defaultServices, faqs } from "@/lib/data";
-import { getGalleryImages } from "@/lib/gallery";
+// import { getGalleryImages } from "@/lib/gallery"; // TEMPORARILY DISABLED — Gallery section removed for presentation
 import { formatCurrency } from "@/lib/utils";
 
 export default async function HomePage() {
-  const gallery = await getGalleryImages();
+  // const gallery = await getGalleryImages(); // TEMPORARILY DISABLED — Gallery section removed for presentation
 
   return (
     <>
@@ -45,6 +45,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* TEMPORARILY DISABLED — Before & After section removed for presentation
       <section className="section-shell">
         <h2 className="text-3xl font-semibold">Before & After</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -53,6 +54,7 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+      */}
 
       <section className="section-shell grid gap-6 lg:grid-cols-2">
         <div className="card">
