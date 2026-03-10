@@ -60,7 +60,7 @@ export default async function HomePage() {
         <div className="card">
           <h3 className="text-2xl font-semibold">Service Area & Hours</h3>
           <p className="mt-3 text-white/75">Houston Metro • Cypress • Jersey Village • Tomball • Katy</p>
-          <p className="mt-2 text-white/75">Mon–Fri: 3:00 PM – 8:00 PM &bull; Sat–Sun: 7:00 AM – 5:00 PM</p>
+          <p className="mt-2 text-white/75">Mon–Fri: 3:00 PM – 8:00 PM &bull; Sat–Sun: 7:00 AM – 5:00 PM (last booking starts at close)</p>
         </div>
         <div className="card">
           <h3 className="text-2xl font-semibold">FAQ</h3>
