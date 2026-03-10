@@ -90,8 +90,6 @@ export const createGoogleBookingEvent = async (payload: {
     throw new Error("Google Calendar is not configured. Add service account env vars and calendar ID.");
   }
 
-  const attendees = payload.email ? [{ email: payload.email }] : undefined;
-
   let response;
   try {
     response = await calendar.events.insert({
@@ -101,14 +99,13 @@ export const createGoogleBookingEvent = async (payload: {
         description: [
           `Name: ${payload.customerName}`,
           `Phone: ${payload.phone}`,
+          `Email: ${payload.email || "Not provided"}`,
           `Address: ${payload.address}`,
           `Service: ${payload.service}`,
-          `Email: ${payload.email || "Not provided"}`,
           `Notes: ${payload.notes || "N/A"}`
         ].join("\n"),
         start: { dateTime: payload.start, timeZone: BUSINESS_TIMEZONE },
-        end: { dateTime: payload.end, timeZone: BUSINESS_TIMEZONE },
-        attendees
+        end: { dateTime: payload.end, timeZone: BUSINESS_TIMEZONE }
       }
     });
   } catch (error) {
