@@ -1,6 +1,6 @@
 import { CheckCircle, Calendar, Clock, MapPin, User, Sparkles, Phone, Plus } from "lucide-react";
-import { format } from "date-fns";
 import Link from "next/link";
+import { BUSINESS_TIMEZONE } from "@/lib/constants";
 
 const formatPriceDollars = (cents: number) =>
   `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
@@ -15,7 +15,11 @@ function parseAddons(raw?: string): { name: string; price_cents: number }[] {
 
 function formatTime(iso: string) {
   try {
-    return format(new Date(iso), "h:mm a");
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: BUSINESS_TIMEZONE,
+    }).format(new Date(iso));
   } catch {
     return iso;
   }
@@ -23,9 +27,15 @@ function formatTime(iso: string) {
 
 function formatDate(dateStr: string) {
   try {
-    // dateStr is YYYY-MM-DD; parse as local date
-    const [y, m, d] = dateStr.split("-").map(Number);
-    return format(new Date(y, m - 1, d), "EEEE, MMMM d, yyyy");
+    // dateStr is YYYY-MM-DD; parse as noon UTC to avoid date-shift issues
+    const d = new Date(`${dateStr}T12:00:00Z`);
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: BUSINESS_TIMEZONE,
+    }).format(d);
   } catch {
     return dateStr;
   }
