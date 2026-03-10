@@ -97,7 +97,12 @@ export const createGoogleBookingEvent = async (payload: {
 
   const descriptionLines: string[] = [];
 
-  // Add-ons section at the top
+  // Total price at the very top
+  const addonsTotalCents = payload.addons?.reduce((sum, a) => sum + a.price_cents, 0) ?? 0;
+  descriptionLines.push(`Total Price: ${formatPriceDollars(payload.basePrice + addonsTotalCents)}`);
+  descriptionLines.push("");
+
+  // Add-ons section
   if (payload.addons && payload.addons.length > 0) {
     descriptionLines.push("Add-Ons:");
     for (const addon of payload.addons) {
