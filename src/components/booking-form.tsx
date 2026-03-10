@@ -232,6 +232,10 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
         </div>
 
         <div className="soft-rise space-y-4">
+          <p className="text-xs text-white/50">
+            Name, phone number, and address are required to schedule your appointment.
+          </p>
+
           <label className="space-y-2 text-sm text-white/80">
             Service
             <select
@@ -318,14 +322,22 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              required
-              placeholder="Full name"
-              value={details.name}
-              onChange={(event) => setDetails((prev) => ({ ...prev, name: event.target.value }))}
-              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
-            />
             <div>
+              <label className="mb-1 block text-sm text-white/80">
+                Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                required
+                placeholder="Full name"
+                value={details.name}
+                onChange={(event) => setDetails((prev) => ({ ...prev, name: event.target.value }))}
+                className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-white/80">
+                Phone Number <span className="text-red-400">*</span>
+              </label>
               <input
                 required
                 placeholder="Phone (10 digits)"
@@ -344,13 +356,18 @@ export function BookingForm({ isOpen, onClose, selectedServiceId }: BookingFormP
             </div>
           </div>
 
-          <input
-            required
-            placeholder="Service address"
-            value={details.address}
-            onChange={(event) => setDetails((prev) => ({ ...prev, address: event.target.value }))}
-            className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
-          />
+          <div>
+            <label className="mb-1 block text-sm text-white/80">
+              Address <span className="text-red-400">*</span>
+            </label>
+            <input
+              required
+              placeholder="Service address"
+              value={details.address}
+              onChange={(event) => setDetails((prev) => ({ ...prev, address: event.target.value }))}
+              className="w-full rounded-xl border border-white/20 bg-black/60 px-3 py-3"
+            />
+          </div>
 
           <input
             placeholder="Email (optional)"
